@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud Firestore Wiper | Rukky's Picks</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <!-- Firebase Compat CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-stone-950 text-stone-100 font-sans antialiased min-h-screen flex items-center justify-center p-4">
+
+  <div class="max-w-2xl w-full bg-stone-900 border border-stone-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-start justify-between border-b border-stone-800 pb-5">
+      <div class="space-y-1">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          Cloud Database Reset Tool
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white font-display tracking-tight">Wipe Cloud Firestore</h1>
+        <p class="text-xs sm:text-sm text-stone-400">
+          Target Project: <span class="text-amber-400 font-mono font-bold" id="targetProject">rukky-s-picks-81b70</span>
+        </p>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-amber-600 flex items-center justify-center text-white text-xl shadow-lg shrink-0">
+        🧹
+      </div>
+    </div>
+
+    <!-- Cloud Status Card -->
+    <div class="bg-stone-950/60 rounded-2xl p-4 border border-stone-800/80 space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Cloud Collection Counts</span>
+        <button id="refreshCountsBtn" class="text-xs text-amber-400 hover:text-amber-300 font-bold flex items-center space-x-1 transition">
+          <span>🔄 Refresh Counts</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+        <div class="bg-stone-900/80 p-3 rounded-xl border border-stone-800">
+          <span class="text-[10px] text-stone-400 uppercase font-bold block">Food Items</span>
+          <span id="countItems" class="text-xl font-black text-white font-display">...</span>
+        </div>
+        <div class="bg-stone-900/80 p-3 rounded-xl border border-stone-800">
+          <span class="text-[10px] text-stone-400 uppercase font-bold block">Combos</span>
+          <span id="countCombos" class="text-xl font-black text-white font-display">...</span>
+        </div>
+        <div class="bg-stone-900/80 p-3 rounded-xl border border-stone-800">
+          <span class="text-[10px] text-stone-400 uppercase font-bold block">Specials</span>
+          <span id="countSpecials" class="text-xl font-black text-white font-display">...</span>
+        </div>
+        <div class="bg-stone-900/80 p-3 rounded-xl border border-stone-800">
+          <span class="text-[10px] text-stone-400 uppercase font-bold block">Spots</span>
+          <span id="countSpots" class="text-xl font-black text-white font-display">...</span>
+        </div>
+      </div>
+
+      <div id="statusNotice" class="text-xs text-stone-400 flex items-center space-x-2 pt-1">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span id="statusNoticeText">Connecting to Cloud Firestore...</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="space-y-3">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button 
+          id="wipeCloudMealsBtn" 
+          class="flex-1 py-4 px-5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 active:scale-98 text-white font-black rounded-2xl text-sm shadow-xl shadow-red-900/30 transition flex items-center justify-center space-x-2"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          <span>Wipe All Meals & Combos from Cloud</span>
+        </button>
+
+        <button 
+          id="wipeAllWithSpotsBtn" 
+          class="py-4 px-4 bg-stone-800 hover:bg-stone-700 active:scale-98 text-stone-300 hover:text-white font-bold rounded-2xl text-xs transition border border-stone-700/80"
+          title="Also resets spots"
+        >
+          Wipe + Reset Spots
+        </button>
+      </div>
+
+      <div class="flex items-center space-x-2 text-xs text-stone-400 px-1">
+        <input type="checkbox" id="wipeLocalCheck" checked class="rounded bg-stone-800 border-stone-700 text-red-500 focus:ring-0 cursor-pointer">
+        <label for="wipeLocalCheck" class="cursor-pointer">Also wipe local browser storage cache so browser is 100% clean</label>
+      </div>
+    </div>
+
+    <!-- Live Execution Log Terminal -->
+    <div class="bg-black/90 rounded-2xl p-4 border border-stone-800 font-mono text-xs space-y-1.5">
+      <div class="flex items-center justify-between text-stone-500 text-[10px] pb-1 border-b border-stone-800">
+        <span>EXECUTION LOG</span>
+        <button id="clearLogBtn" class="hover:text-stone-300">Clear Log</button>
+      </div>
+      <div id="logContainer" class="max-h-48 overflow-y-auto space-y-1 text-stone-300">
+        <div class="text-stone-500">[System] Wiper tool initialized. Click "Wipe All Meals from Cloud" to execute.</div>
+      </div>
+    </div>
+
+    <!-- Navigation Footer -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-stone-800 text-xs font-bold text-stone-400">
+      <div class="flex items-center space-x-4">
+        <a href="admin.html" class="hover:text-white transition flex items-center space-x-1">
+          <span>← Back to Admin Portal</span>
+        </a>
+        <a href="index.html" class="hover:text-white transition">Student App</a>
+        <a href="vendor.html" class="hover:text-white transition">Vendor Portal</a>
+      </div>
+      <span class="text-stone-600 text-[11px]">Rukky's Picks • Wellspring University</span>
+    </div>
+
+  </div>
+
+  <script>
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCPDQo2ZuTXDPL8n1_gLwJYDeFjX4zlthk",
+      authDomain: "rukky-s-picks-81b70.firebaseapp.com",
+      projectId: "rukky-s-picks-81b70",
+      storageBucket: "rukky-s-picks-81b70.firebasestorage.app",
+      messagingSenderId: "1065689441210",
+      appId: "1:1065689441210:web:baa77858effd7c9ea23383"
+    };
+
+    let app = null;
+    let db = null;
+    let auth = null;
+
+    const logContainer = document.getElementById('logContainer');
+    const countItems = document.getElementById('countItems');
+    const countCombos = document.getElementById('countCombos');
+    const countSpecials = document.getElementById('countSpecials');
+    const countSpots = document.getElementById('countSpots');
+    const statusNoticeText = document.getElementById('statusNoticeText');
+
+    function log(msg, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      let color = 'text-stone-300';
+      if (type === 'success') color = 'text-emerald-400 font-bold';
+      if (type === 'error') color = 'text-red-400 font-bold';
+      if (type === 'warning') color = 'text-amber-400';
+      if (type === 'info') color = 'text-sky-300';
+
+      const div = document.createElement('div');
+      div.className = color;
+      div.textContent = `[${time}] ${msg}`;
+      logContainer.appendChild(div);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    async function init() {
+      try {
+        if (!firebase.apps.length) {
+          app = firebase.initializeApp(FIREBASE_CONFIG);
+        } else {
+          app = firebase.app();
+        }
+        db = firebase.firestore();
+        auth = firebase.auth();
+        log(`Connected to Firebase project: ${FIREBASE_CONFIG.projectId}`, 'success');
+        statusNoticeText.textContent = "Connected to Firestore. Querying counts...";
+        await loadCounts();
+      } catch (err) {
+        log(`Failed to initialize Firebase: ${err.message}`, 'error');
+        statusNoticeText.textContent = "Error: " + err.message;
+      }
+    }
+
+    async function loadCounts() {
+      if (!db) return;
+      statusNoticeText.textContent = "Refreshing cloud counts...";
+      try {
+        const [iSnap, cSnap, sSnap, spSnap] = await Promise.all([
+          db.collection('items').get(),
+          db.collection('combos').get(),
+          db.collection('specials').get(),
+          db.collection('spots').get()
+        ]);
+
+        countItems.textContent = iSnap.size;
+        countCombos.textContent = cSnap.size;
+        countSpecials.textContent = sSnap.size;
+        countSpots.textContent = spSnap.size;
+
+        log(`Cloud status: ${iSnap.size} items, ${cSnap.size} combos, ${sSnap.size} specials, ${spSnap.size} spots found in cloud.`, 'info');
+        statusNoticeText.textContent = `Cloud counts loaded: ${iSnap.size} items, ${cSnap.size} combos, ${sSnap.size} specials.`;
+      } catch (err) {
+        log(`Error loading counts: ${err.message}`, 'error');
+        statusNoticeText.textContent = "Query failed: " + err.message;
+      }
+    }
+
+    async function ensureAuth() {
+      if (!auth) return;
+      if (auth.currentUser) {
+        log(`Using authenticated user: ${auth.currentUser.email || auth.currentUser.uid}`, 'info');
+        return auth.currentUser;
+      }
+      try {
+        log("Attempting silent anonymous authentication...", "info");
+        const cred = await auth.signInAnonymously();
+        log(`Authenticated anonymously: ${cred.user.uid}`, 'success');
+        return cred.user;
+      } catch (e1) {
+        try {
+          log("Trying default admin credentials...", "info");
+          const cred = await auth.signInWithEmailAndPassword('rukky@wellspring.edu.ng', 'admin123');
+          log(`Signed in as: ${cred.user.email}`, 'success');
+          return cred.user;
+        } catch (e2) {
+          log(`Notice: Cloud operation proceeding without active session (${e2.message})`, 'warning');
+        }
+      }
+      return null;
+    }
+
+    async function deleteCollection(colName) {
+      log(`Fetching documents in '${colName}'...`, 'info');
+      const snap = await db.collection(colName).get();
+      if (snap.empty) {
+        log(`Collection '${colName}' is already completely empty (0 documents).`, 'success');
+        return 0;
+      }
+
+      const total = snap.docs.length;
+      log(`Found ${total} document(s) in '${colName}'. Deleting in chunks...`, 'warning');
+
+      let deleted = 0;
+      for (let i = 0; i < snap.docs.length; i += 300) {
+        const chunk = snap.docs.slice(i, i + 300);
+        const batch = db.batch();
+        chunk.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        deleted += chunk.length;
+        log(`Deleted ${deleted}/${total} from '${colName}'...`, 'info');
+      }
+
+      log(`✅ Successfully wiped all ${deleted} document(s) from '${colName}'!`, 'success');
+      return deleted;
+    }
+
+    async function executeWipe(includeSpots = false) {
+      const confirmMsg = includeSpots
+        ? "⚠️ ARE YOU 100% SURE?\n\nThis will permanently delete ALL food items, combos, specials, AND spots from Cloud Firestore (project rukky-s-picks-81b70).\n\nThis cannot be undone!"
+        : "⚠️ ARE YOU 100% SURE?\n\nThis will permanently delete ALL food items, combos, and daily specials from Cloud Firestore (project rukky-s-picks-81b70).\n\nCampus spots will be preserved.\n\nProceed?";
+
+      if (!confirm(confirmMsg)) return;
+
+      const btn = document.getElementById('wipeCloudMealsBtn');
+      btn.disabled = true;
+      btn.textContent = "Wiping Cloud Firestore... ⏳";
+
+      try {
+        await ensureAuth();
+
+        log("--- STARTING CLOUD FIRESTORE WIPE ---", 'warning');
+        const delItems = await deleteCollection('items');
+        const delCombos = await deleteCollection('combos');
+        const delSpecials = await deleteCollection('specials');
+
+        let delSpots = 0;
+        if (includeSpots) {
+          delSpots = await deleteCollection('spots');
+        }
+
+        // Also clean local storage if checked
+        if (document.getElementById('wipeLocalCheck').checked) {
+          localStorage.setItem('rukkys_items', JSON.stringify([]));
+          localStorage.setItem('rukkys_combos', JSON.stringify([]));
+          localStorage.setItem('rukkys_specials', JSON.stringify([]));
+          localStorage.setItem('rukkys_firebase_config', 'local');
+          localStorage.setItem('rukkys_seed_version', 'v7_cloud_wiped');
+          log("✅ Local browser storage was also wiped clean!", 'success');
+        }
+
+        log(`🎉 WIPE COMPLETE! Deleted ${delItems} items, ${delCombos} combos, ${delSpecials} specials from the cloud!`, 'success');
+        statusNoticeText.textContent = "✅ Cloud Firestore is now 100% CLEAN!";
+        alert(`Cloud Firestore Wiped Successfully!\n\nDeleted:\n• ${delItems} Food Items\n• ${delCombos} Combos\n• ${delSpecials} Daily Specials\n\nYour cloud database is now clean!`);
+        await loadCounts();
+      } catch (err) {
+        log(`❌ WIPE FAILED: ${err.message}`, 'error');
+        alert("Wipe error: " + err.message + "\n\nIf permission was denied, please check your Firestore security rules in Firebase Console.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          <span>Wipe All Meals & Combos from Cloud</span>
+        `;
+      }
+    }
+
+    document.getElementById('wipeCloudMealsBtn').addEventListener('click', () => executeWipe(false));
+    document.getElementById('wipeAllWithSpotsBtn').addEventListener('click', () => executeWipe(true));
+    document.getElementById('refreshCountsBtn').addEventListener('click', loadCounts);
+    document.getElementById('clearLogBtn').addEventListener('click', () => {
+      logContainer.innerHTML = '';
+    });
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vendor Menu Manager | Rukky's Picks</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase Compat CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <!-- Database Layer & Rukky's Engine -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/engine.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              dark: '#1c1917',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html, body {
+      overflow-x: hidden;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      touch-action: manipulation;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    /* Prevent iOS auto-zoom on input tap */
+    @media screen and (max-width: 768px) {
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+    }
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 9999px;
+    }
+    .tap-highlight-transparent {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-stone-100 text-stone-900 font-sans antialiased min-h-screen flex justify-center selection:bg-orange-200">
+
+  <!-- Mobile Container Wrapper: 100% mobile-first, strict zero bleed -->
+  <div class="w-full max-w-md bg-stone-50 min-h-screen shadow-2xl relative flex flex-col pb-24 overflow-x-hidden">
+
+    <!-- Top Sticky Header -->
+    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/80 px-4 py-3">
+      <div class="flex items-center justify-between gap-2">
+        <!-- Canteen Identity -->
+        <div class="flex items-center space-x-2.5 min-w-0 flex-1">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-amber-500 to-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20 text-lg shrink-0">
+            🏪
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center space-x-1.5">
+              <h1 class="text-sm sm:text-base font-extrabold text-stone-900 font-display truncate" id="headerSpotName">
+                Mama Joy's Canteen
+              </h1>
+              <span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full uppercase shrink-0">
+                Vendor
+              </span>
+            </div>
+            <p class="text-[11px] text-stone-500 font-medium truncate" id="headerSpotTag">
+              Near School Gate
+            </p>
+          </div>
+        </div>
+
+        <!-- Quick Switch Canteen & Student View Links -->
+        <div class="flex items-center space-x-1.5 shrink-0">
+          <button id="openSwitchCanteenBtn" class="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 active:scale-95 text-stone-700 text-xs font-bold rounded-xl border border-stone-200 transition flex items-center space-x-1 tap-highlight-transparent">
+            <span>Switch</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+
+          <a href="index.html" class="p-2 text-stone-500 hover:text-brand-600 rounded-xl hover:bg-stone-100 transition tap-highlight-transparent" title="Go to Student App">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Essential Tabs Bar (Only 2 Tabs) -->
+    <div class="p-3 bg-stone-100/90 border-b border-stone-200 sticky top-[57px] z-30 backdrop-blur-md">
+      <div class="flex bg-stone-200/70 p-1 rounded-2xl text-xs font-bold">
+        <button id="tabOffersBtn" class="flex-1 py-2.5 rounded-xl bg-white text-stone-900 shadow-sm transition flex items-center justify-center space-x-1.5 tap-highlight-transparent">
+          <span>🍲 Food Items & Prices</span>
+          <span id="offersCountBadge" class="bg-brand-100 text-brand-700 text-[10px] px-1.5 py-0.2 rounded-full">0</span>
+        </button>
+        <button id="tabSpecialsBtn" class="flex-1 py-2.5 rounded-xl text-stone-500 hover:text-stone-800 transition flex items-center justify-center space-x-1.5 tap-highlight-transparent">
+          <span>⭐ Special Menu</span>
+          <span id="specialsCountBadge" class="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-4 space-y-4">
+
+      <!-- ================= TAB 1: INDIVIDUAL FOOD ITEMS & PRICES ================= -->
+      <section id="offersSection" class="space-y-3">
+        
+        <!-- Section Header -->
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <h2 class="text-base font-extrabold text-stone-900 font-display">Food Items & Prices</h2>
+            <p class="text-[11px] text-stone-500 truncate">Add what you offer (e.g. Boiled Egg, Jollof Rice)</p>
+          </div>
+          <button id="openAddOfferBtn" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-brand-500/20 flex items-center space-x-1 transition shrink-0 tap-highlight-transparent">
+            <span>+ Add Item</span>
+          </button>
+        </div>
+
+        <!-- Rukky's Engine Live Status Banner -->
+        <div id="engineStatusBanner" class="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/80 rounded-2xl p-3 flex items-center justify-between gap-2 shadow-sm">
+          <div class="flex items-center space-x-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center text-sm font-bold shrink-0">
+              ⚡
+            </div>
+            <div class="min-w-0">
+              <span class="text-[10px] font-black uppercase tracking-wider text-brand-700 block">Rukky's Engine Active</span>
+              <p class="text-xs font-bold text-stone-800 truncate" id="engineCombosCount">Mixing your items into 0 combos</p>
+            </div>
+          </div>
+          <span class="text-[10px] bg-white text-stone-600 font-extrabold px-2 py-1 rounded-lg border border-stone-200 shrink-0 shadow-xs">
+            Auto-Mix 🤖
+          </span>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+          <button class="vendor-filter active px-3 py-1.5 rounded-full font-bold bg-stone-900 text-white shadow-sm shrink-0 transition" data-category="all">
+            All Items
+          </button>
+          <button class="vendor-filter px-3 py-1.5 rounded-full font-bold bg-white text-stone-600 border border-stone-200/80 hover:bg-stone-100 shrink-0 transition" data-category="main">
+            Mains 🍚
+          </button>
+          <button class="vendor-filter px-3 py-1.5 rounded-full font-bold bg-white text-stone-600 border border-stone-200/80 hover:bg-stone-100 shrink-0 transition" data-category="protein">
+            Proteins 🍗
+          </button>
+          <button class="vendor-filter px-3 py-1.5 rounded-full font-bold bg-white text-stone-600 border border-stone-200/80 hover:bg-stone-100 shrink-0 transition" data-category="side">
+            Sides 🍟
+          </button>
+          <button class="vendor-filter px-3 py-1.5 rounded-full font-bold bg-white text-stone-600 border border-stone-200/80 hover:bg-stone-100 shrink-0 transition" data-category="drink">
+            Drinks 🥤
+          </button>
+        </div>
+
+        <!-- Items List (Mobile Cards, No Tables) -->
+        <div id="offersList" class="space-y-2.5">
+          <!-- Dynamically Rendered -->
+        </div>
+
+        <!-- Empty Items State -->
+        <div id="offersEmptyState" class="hidden bg-white rounded-3xl p-6 text-center border border-dashed border-stone-300">
+          <div class="text-3xl mb-2">🍲</div>
+          <h3 class="font-bold text-stone-900 text-sm">No food items added yet</h3>
+          <p class="text-xs text-stone-500 mt-1 max-w-xs mx-auto">Tap "+ Add Item" to list what food items you offer students at your canteen.</p>
+          <button id="emptyAddOfferBtn" class="mt-3 px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-bold shadow hover:bg-brand-700 transition">
+            + Add First Food Item
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: SPECIAL MENU (TODAY'S SPECIALS) ================= -->
+      <section id="specialsSection" class="space-y-3 hidden">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <h2 class="text-base font-extrabold text-stone-900 font-display">Today's Special Menu</h2>
+            <p class="text-[11px] text-stone-500 truncate">Curated daily deals featured at the top banner of the student app</p>
+          </div>
+          <button id="openAddSpecialBtn" class="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 flex items-center space-x-1 transition shrink-0 tap-highlight-transparent">
+            <span>+ Add Special</span>
+          </button>
+        </div>
+
+        <!-- Specials List (Mobile Cards) -->
+        <div id="specialsList" class="space-y-2.5">
+          <!-- Dynamically Rendered -->
+        </div>
+
+        <!-- Empty Specials State -->
+        <div id="specialsEmptyState" class="hidden bg-white rounded-3xl p-6 text-center border border-dashed border-stone-300">
+          <div class="text-3xl mb-2">⭐</div>
+          <h3 class="font-bold text-stone-900 text-sm">No special menu posted today</h3>
+          <p class="text-xs text-stone-500 mt-1 max-w-xs mx-auto">Have a special meal deal cooked for today? Tap "+ Add Special" so students see it right away.</p>
+          <button id="emptyAddSpecialBtn" class="mt-3 px-4 py-2 bg-amber-600 text-white rounded-xl text-xs font-bold shadow hover:bg-amber-700 transition">
+            + Post Today's Special
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Mobile First) -->
+    <nav class="fixed bottom-0 max-w-md w-full bg-white/95 backdrop-blur-md border-t border-stone-200/90 py-2.5 px-6 z-40 flex items-center justify-around shadow-lg">
+      <button id="navOffersBtn" class="flex flex-col items-center text-brand-600 text-[11px] font-bold space-y-1 tap-highlight-transparent">
+        <span class="text-base">🍲</span>
+        <span>Food Items</span>
+      </button>
+
+      <button id="navSpecialsBtn" class="flex flex-col items-center text-stone-400 hover:text-stone-700 text-[11px] font-semibold space-y-1 transition tap-highlight-transparent">
+        <span class="text-base">⭐</span>
+        <span>Special Menu</span>
+      </button>
+
+      <button id="navCanteenBtn" class="flex flex-col items-center text-stone-400 hover:text-stone-700 text-[11px] font-semibold space-y-1 transition tap-highlight-transparent">
+        <span class="text-base">🏪</span>
+        <span>My Canteen</span>
+      </button>
+
+      <a href="index.html" class="flex flex-col items-center text-stone-400 hover:text-stone-700 text-[11px] font-semibold space-y-1 transition tap-highlight-transparent">
+        <span class="text-base">🎓</span>
+        <span>Student App</span>
+      </a>
+    </nav>
+
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT INDIVIDUAL FOOD ITEM ================= -->
+  <div id="offerModal" class="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 pb-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-3 sm:hidden"></div>
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+        <div>
+          <h3 class="font-bold text-stone-900 text-base" id="offerModalTitle">Add Food Item & Price</h3>
+          <p class="text-[11px] text-stone-500">Put the individual food item and its price</p>
+        </div>
+        <button type="button" class="close-modal-btn p-1.5 rounded-full text-stone-400 hover:bg-stone-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <form id="offerForm" class="mt-4 space-y-3.5">
+        <input type="hidden" id="offerEditId">
+
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1">Item Name *</label>
+          <input 
+            type="text" 
+            id="offerTitle" 
+            required 
+            placeholder="e.g. Boiled Egg, Jollof Rice, Fried Beef" 
+            class="w-full text-sm p-3 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:border-brand-500 font-medium"
+          >
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1">Price in Naira (₦) *</label>
+          <div class="relative flex items-center">
+            <span class="absolute left-3.5 text-stone-400 font-bold font-display text-lg">₦</span>
+            <input 
+              type="number" 
+              id="offerPrice" 
+              required 
+              min="50" 
+              step="50" 
+              placeholder="500" 
+              class="w-full pl-9 pr-3 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:border-brand-500 font-display font-bold text-lg text-stone-900"
+            >
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1">Item Category *</label>
+          <select id="offerCategory" class="w-full text-sm p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-brand-500">
+            <option value="main">🍚 Main / Staple (Rice, Swallow, Beans, Noodles, Yam, Bread)</option>
+            <option value="protein">🍗 Protein (Chicken, Beef, Fish, Egg, Sausage, Suya)</option>
+            <option value="side">🍟 Side Dish (Plantain/Dodo, Salad, Moimoi, Pepper Sauce)</option>
+            <option value="drink">🥤 Drink (Zobo, Soft Drink, Malt, Water, Juice, Yoghurt)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="offerAvailable" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-stone-300">
+          <label for="offerAvailable" class="text-xs font-bold text-stone-700">Available in canteen today</label>
+        </div>
+
+        <button type="submit" id="saveOfferBtn" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 active:scale-98 text-white font-bold rounded-xl text-sm shadow-md shadow-brand-500/20 transition mt-2">
+          Save Food Item
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT SPECIAL MENU ================= -->
+  <div id="specialModal" class="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 pb-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-3 sm:hidden"></div>
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+        <div>
+          <h3 class="font-bold text-stone-900 text-base" id="specialModalTitle">Post Special Menu</h3>
+          <p class="text-[11px] text-stone-500">Curated combo meals cooked fresh for today</p>
+        </div>
+        <button type="button" class="close-modal-btn p-1.5 rounded-full text-stone-400 hover:bg-stone-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <form id="specialForm" class="mt-4 space-y-3.5">
+        <input type="hidden" id="specialEditId">
+
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1">Special Meal Deal Name *</label>
+          <input 
+            type="text" 
+            id="specialTitle" 
+            required 
+            placeholder="e.g. Friday Special Fried Rice + Peppered Goat Meat" 
+            class="w-full text-sm p-3 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:border-amber-500 font-medium"
+          >
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-stone-700 mb-1">Special Price in Naira (₦) *</label>
+          <div class="relative flex items-center">
+            <span class="absolute left-3.5 text-stone-400 font-bold font-display text-lg">₦</span>
+            <input 
+              type="number" 
+              id="specialPrice" 
+              required 
+              min="100" 
+              step="50" 
+              placeholder="2400" 
+              class="w-full pl-9 pr-3 py-3 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:border-amber-500 font-display font-bold text-lg text-stone-900"
+            >
+          </div>
+        </div>
+
+        <button type="submit" id="saveSpecialBtn" class="w-full py-3.5 bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-bold rounded-xl text-sm shadow-md shadow-amber-500/20 transition mt-2">
+          Publish Special Menu
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: SWITCH / ADD CANTEEN (NO EMAIL!) ================= -->
+  <div id="canteenModal" class="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 pb-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="w-10 h-1 bg-stone-200 rounded-full mx-auto mb-3 sm:hidden"></div>
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+        <div>
+          <h3 class="font-bold text-stone-900 text-base">Select Your Canteen</h3>
+          <p class="text-[11px] text-stone-500">Tap your canteen to manage its menu</p>
+        </div>
+        <button type="button" class="close-modal-btn p-1.5 rounded-full text-stone-400 hover:bg-stone-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- List of Canteens -->
+      <div class="mt-4 space-y-2 max-h-64 overflow-y-auto" id="canteenPickerList">
+        <!-- Injected via JS -->
+      </div>
+
+      <p class="text-[11px] text-stone-400 text-center pt-3 border-t border-stone-100 font-medium">
+        Campus food spots are managed exclusively by Wellspring Admin.
+      </p>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center space-x-2">
+    <span id="toastIcon">✨</span>
+    <span id="toastMsg">Action successful</span>
+  </div>
+
+  <!-- Vendor Portal Logic Script -->
+  <script src="js/vendor.js"></script>
+</body>
+</html>

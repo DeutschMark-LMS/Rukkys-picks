@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Dashboard | Rukky's Picks</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Firebase Compat CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              dark: '#1c1917',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    html, body {
+      overflow-x: hidden;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* Prevent iOS auto-zoom on inputs */
+    @media screen and (max-width: 768px) {
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+    }
+    .touch-scroll {
+      -webkit-overflow-scrolling: touch;
+    }
+    .tap-highlight-transparent {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-stone-100 text-stone-900 font-sans antialiased min-h-screen selection:bg-orange-200">
+
+  <!-- ================= AUTH GATE / LOGIN SCREEN ================= -->
+  <div id="authGate" class="fixed inset-0 z-50 bg-stone-900/90 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-stone-200 text-center max-h-[92vh] overflow-y-auto pb-8 sm:pb-8">
+      <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-4 sm:hidden"></div>
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 to-amber-500 mx-auto flex items-center justify-center text-white shadow-lg shadow-brand-500/30 mb-3">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+        </svg>
+      </div>
+      <h2 class="text-xl sm:text-2xl font-extrabold text-stone-900 font-display">Rukky’s Admin Portal</h2>
+      <p class="text-xs text-stone-500 mt-1 mb-5">Manage individual food items, campus canteens, and live engine rules</p>
+
+      <form id="loginForm" class="space-y-3.5 text-left">
+        <div>
+          <label class="block text-xs font-bold text-stone-600 mb-1">Admin Email</label>
+          <input type="email" id="loginEmail" required placeholder="admin@wellspring.edu.ng" value="rukky@wellspring.edu.ng" class="w-full text-xs p-3 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:border-brand-500 font-medium">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-stone-600 mb-1">Password</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" value="admin123" class="w-full text-xs p-3 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:border-brand-500 font-medium">
+        </div>
+        <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 active:scale-98 text-white font-bold rounded-xl text-xs shadow-md shadow-brand-500/20 transition">
+          Sign In as Admin
+        </button>
+      </form>
+
+      <div class="mt-4 pt-4 border-t border-stone-100 flex flex-col gap-2">
+        <button id="quickDemoLoginBtn" class="w-full py-2.5 bg-stone-100 hover:bg-stone-200 active:scale-98 text-stone-700 font-bold rounded-xl text-xs transition flex items-center justify-center space-x-1.5">
+          <span>⚡ Enter Admin Demo (No password needed)</span>
+        </button>
+        <div class="flex items-center justify-between text-xs text-stone-400 font-medium pt-1">
+          <a href="index.html" class="hover:text-stone-700 transition">← Student Food App</a>
+          <a href="vendor.html" class="hover:text-amber-600 transition">Canteen Vendor Portal →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN ADMIN DASHBOARD ================= -->
+  <div id="adminApp" class="min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar (Mobile-First, Zero Bleed) -->
+    <header class="bg-stone-900 text-white px-3 sm:px-6 py-2.5 sm:py-3.5 sticky top-0 z-30 shadow-md border-b border-stone-800">
+      <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+        <!-- Logo & Admin Title -->
+        <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-amber-500 flex items-center justify-center text-white font-extrabold text-sm sm:text-base shadow shrink-0">
+            R
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center space-x-1.5">
+              <span class="font-extrabold text-sm sm:text-base tracking-tight font-display truncate">Rukky’s Admin</span>
+              <span class="text-[9px] sm:text-[10px] bg-brand-500/20 text-brand-300 font-bold px-1.5 py-0.5 rounded-full uppercase shrink-0">HQ</span>
+            </div>
+            <p class="text-[10px] sm:text-[11px] text-stone-400 truncate" id="userEmailBadge">rukky@wellspring.edu.ng</p>
+          </div>
+        </div>
+
+        <!-- Right Quick Actions -->
+        <div class="flex items-center space-x-1 sm:space-x-2 shrink-0">
+          <!-- Cloud Status Badge -->
+          <span id="cloudStatusBadge" class="text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded-full font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center space-x-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="cloudStatusText" class="hidden md:inline">Local Demo Mode</span>
+            <span class="md:hidden">Local</span>
+          </span>
+
+          <a href="vendor.html" title="Vendor Portal" class="px-2 sm:px-3 py-1.5 bg-stone-800 hover:bg-stone-700 active:scale-95 text-stone-200 text-xs font-semibold rounded-xl border border-stone-700 flex items-center space-x-1 sm:space-x-1.5 transition">
+            <span class="text-sm">🏪</span>
+            <span class="hidden sm:inline">Vendor</span>
+          </a>
+
+          <a href="index.html" target="_blank" title="Student Food App" class="px-2 sm:px-3 py-1.5 bg-stone-800 hover:bg-stone-700 active:scale-95 text-stone-200 text-xs font-semibold rounded-xl border border-stone-700 flex items-center space-x-1 sm:space-x-1.5 transition">
+            <span class="text-sm">🎓</span>
+            <span class="hidden sm:inline">App</span>
+          </a>
+
+          <button id="logoutBtn" class="text-xs bg-red-950/40 hover:bg-red-900/60 active:scale-95 text-red-300 border border-red-800/40 px-2 sm:px-3 py-1.5 rounded-xl font-bold transition">
+            <span class="hidden sm:inline">Sign Out</span>
+            <span class="sm:hidden">Exit</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
+
+      <!-- Metrics Cards (Mobile-First 2-Column Grid on small, 4-col on lg) -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div class="bg-white p-3 sm:p-4 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-stone-400">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Food Items</span>
+            <span class="text-base sm:text-lg">🍲</span>
+          </div>
+          <p class="text-xl sm:text-3xl font-extrabold text-stone-900 font-display mt-1" id="statItemsCount">0</p>
+          <span class="text-[10px] sm:text-[11px] text-brand-600 font-semibold truncate">Individual items</span>
+        </div>
+
+        <div class="bg-white p-3 sm:p-4 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-stone-400">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Engine Combos</span>
+            <span class="text-base sm:text-lg">🤖</span>
+          </div>
+          <p class="text-xl sm:text-3xl font-extrabold text-stone-900 font-display mt-1" id="statCombosCount">0</p>
+          <span class="text-[10px] sm:text-[11px] text-brand-600 font-semibold truncate">Auto-mixed combos</span>
+        </div>
+
+        <div class="bg-white p-3 sm:p-4 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-stone-400">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Daily Deals</span>
+            <span class="text-base sm:text-lg">🌟</span>
+          </div>
+          <p class="text-xl sm:text-3xl font-extrabold text-stone-900 font-display mt-1" id="statSpecialsCount">0</p>
+          <span class="text-[10px] sm:text-[11px] text-amber-600 font-semibold truncate">Today's specials</span>
+        </div>
+
+        <div class="bg-white p-3 sm:p-4 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between text-stone-400">
+            <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Campus Spots</span>
+            <span class="text-base sm:text-lg">📍</span>
+          </div>
+          <p class="text-xl sm:text-3xl font-extrabold text-stone-900 font-display mt-1" id="statSpotsCount">0</p>
+          <span class="text-[10px] sm:text-[11px] text-emerald-600 font-semibold truncate">Food canteens</span>
+        </div>
+      </section>
+
+      <!-- Dashboard Tabs Navigation (Mobile Swipeable Edge-to-Edge) -->
+      <div class="flex items-center space-x-2 border-b border-stone-200 pb-2.5 overflow-x-auto text-xs font-bold no-scrollbar touch-scroll -mx-3 px-3 sm:mx-0 sm:px-0">
+        <button class="tab-btn px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-stone-900 text-white transition shrink-0 whitespace-nowrap flex items-center space-x-1.5 active:scale-95 min-h-[40px]" data-tab="itemsTab">
+          <span>🍲</span>
+          <span>Food Items & Prices</span>
+          <span id="tabItemsPill" class="ml-1 px-1.5 py-0.5 bg-white/20 text-white text-[10px] rounded-full">0</span>
+        </button>
+        <button class="tab-btn px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 transition shrink-0 whitespace-nowrap flex items-center space-x-1.5 active:scale-95 min-h-[40px]" data-tab="combosTab">
+          <span>🤖</span>
+          <span>Rukky's Engine Combos</span>
+          <span id="tabCombosPill" class="ml-1 px-1.5 py-0.5 bg-brand-500 text-white text-[10px] rounded-full">0</span>
+        </button>
+        <button class="tab-btn px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 transition shrink-0 whitespace-nowrap flex items-center space-x-1.5 active:scale-95 min-h-[40px]" data-tab="specialsTab">
+          <span>🌟</span>
+          <span>Daily Deals</span>
+          <span id="tabSpecialsPill" class="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] rounded-full">0</span>
+        </button>
+        <button class="tab-btn px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 transition shrink-0 whitespace-nowrap flex items-center space-x-1.5 active:scale-95 min-h-[40px]" data-tab="spotsTab">
+          <span>📍</span>
+          <span>Campus Spots</span>
+          <span id="tabSpotsPill" class="ml-1 px-1.5 py-0.5 bg-emerald-600 text-white text-[10px] rounded-full">0</span>
+        </button>
+        <button class="tab-btn px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 transition shrink-0 relative whitespace-nowrap flex items-center space-x-1.5 active:scale-95 min-h-[40px]" data-tab="suggestionsTab">
+          <span>📬</span>
+          <span>Student Suggestions</span>
+          <span id="tabSuggestionPill" class="hidden ml-1 px-1.5 py-0.5 bg-purple-600 text-white text-[10px] rounded-full">0</span>
+        </button>
+        <button class="tab-btn px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-stone-200 text-stone-700 hover:bg-stone-300 transition shrink-0 whitespace-nowrap flex items-center space-x-1.5 active:scale-95 min-h-[40px]" data-tab="settingsTab">
+          <span>⚙️</span>
+          <span>Firebase & Backup</span>
+        </button>
+      </div>
+
+      <!-- ================= TAB 1: INDIVIDUAL FOOD ITEMS & PRICES ================= -->
+      <section id="itemsTab" class="tab-content space-y-4">
+        <!-- Header & Action Row -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-stone-900 font-display">Campus Food Items & Prices</h3>
+            <p class="text-xs text-stone-500">Individual food items entered per canteen. Rukky's Engine automatically mixes them!</p>
+          </div>
+          <button id="openAddItemBtn" class="w-full sm:w-auto px-4 py-3 sm:py-2.5 bg-brand-600 hover:bg-brand-700 active:scale-98 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/20 flex items-center justify-center space-x-1.5 transition shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+            <span>+ Add Food Item</span>
+          </button>
+        </div>
+
+        <!-- Filter Controls Toolbar (Responsive Grid/Flex) -->
+        <div class="bg-white rounded-2xl p-3 sm:p-4 border border-stone-200 shadow-sm space-y-3">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <!-- Canteen Filter Select -->
+            <div class="w-full sm:w-64">
+              <label class="block text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1">Filter by Canteen</label>
+              <select id="itemSpotFilterSelect" class="w-full text-xs p-2.5 rounded-xl bg-stone-50 border border-stone-200 font-bold text-stone-700 focus:outline-none focus:border-brand-500">
+                <option value="all">All Canteens</option>
+              </select>
+            </div>
+
+            <!-- Search Item Input -->
+            <div class="flex-1">
+              <label class="block text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1">Search Food Item</label>
+              <div class="relative">
+                <input type="text" id="itemSearchInput" placeholder="Search by name (e.g. Boiled Egg, Rice)..." class="w-full text-xs p-2.5 pl-8 rounded-xl bg-stone-50 border border-stone-200 focus:outline-none focus:border-brand-500 font-medium">
+                <span class="absolute left-2.5 top-2.5 text-stone-400 text-xs">🔍</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Filter Quick Pills -->
+          <div class="flex items-center space-x-1.5 overflow-x-auto no-scrollbar touch-scroll pt-1 text-xs">
+            <button class="admin-category-filter active px-3 py-1.5 rounded-full font-bold bg-stone-900 text-white shadow-sm shrink-0 transition" data-category="all">
+              All Items
+            </button>
+            <button class="admin-category-filter px-3 py-1.5 rounded-full font-bold bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 shrink-0 transition" data-category="main">
+              Mains 🍚
+            </button>
+            <button class="admin-category-filter px-3 py-1.5 rounded-full font-bold bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 shrink-0 transition" data-category="protein">
+              Proteins 🍗
+            </button>
+            <button class="admin-category-filter px-3 py-1.5 rounded-full font-bold bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 shrink-0 transition" data-category="side">
+              Sides 🍟
+            </button>
+            <button class="admin-category-filter px-3 py-1.5 rounded-full font-bold bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 shrink-0 transition" data-category="drink">
+              Drinks 🥤
+            </button>
+          </div>
+        </div>
+
+        <!-- Mobile Cards List View (< md) -->
+        <div class="block md:hidden space-y-2.5" id="itemsMobileList">
+          <!-- Dynamically rendered mobile cards -->
+        </div>
+
+        <!-- Desktop Table View (>= md) -->
+        <div class="hidden md:block bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-stone-50 border-b border-stone-200 text-stone-400 font-bold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">Item Name</th>
+                  <th class="py-3 px-4">Canteen / Spot</th>
+                  <th class="py-3 px-4">Price (₦)</th>
+                  <th class="py-3 px-4">Category</th>
+                  <th class="py-3 px-4">Availability</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="itemsTableBody" class="divide-y divide-stone-100 font-medium">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: RUKKY'S ENGINE COMBOS ================= -->
+      <section id="combosTab" class="tab-content hidden space-y-4">
+        <!-- Live Combiner Banner -->
+        <div class="bg-gradient-to-r from-orange-50 via-amber-50 to-orange-50 border border-orange-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl bg-brand-500 text-white flex items-center justify-center text-xl font-bold shrink-0 shadow-md shadow-brand-500/20">
+              ⚡
+            </div>
+            <div>
+              <h4 class="font-bold text-stone-900 text-sm font-display flex items-center gap-1.5">
+                <span>Rukky's Engine Live Combiner</span>
+                <span class="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded-full uppercase">Active</span>
+              </h4>
+              <p class="text-xs text-stone-600 mt-0.5" id="engineOverviewText">
+                Dynamically mixes available items into balanced meals with 1 Main + 1 Protein (+ Side/Drink).
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 shrink-0">
+            <span class="text-xs bg-white text-brand-700 font-black px-3 py-1.5 rounded-xl border border-orange-200 shadow-xs" id="engineCombosBadge">
+              0 Combos Generated
+            </span>
+            <button id="toggleEngineRulesBtn" type="button" class="px-3 py-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs flex items-center space-x-1.5 transition shrink-0 active:scale-95 shadow-sm">
+              <span>⚙️</span>
+              <span id="toggleEngineRulesText">Configure Rules</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Collapsible / Editable Engine Rules Panel -->
+        <div id="engineRulesPanel" class="bg-white rounded-2xl p-4 sm:p-5 border border-stone-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div class="flex items-center space-x-2.5">
+              <span class="text-xl">⚙️</span>
+              <div>
+                <h4 class="font-bold text-stone-900 text-sm font-display">Rukky's Engine Rulebook & Parameters</h4>
+                <p class="text-[11px] text-stone-500">Fine-tune how Rukky pairs campus food items, caps student prices, and prevents weird combos.</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-extrabold bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full uppercase tracking-wider">Live Logic</span>
+          </div>
+
+          <form id="engineRulesForm" class="space-y-4 text-xs">
+            <!-- Price & Threshold Controls -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div>
+                <label class="block font-bold text-stone-700 mb-1">
+                  Max Student Budget Cap (₦)
+                  <span class="text-stone-400 font-normal ml-1">Meals exceeding this won't be mixed</span>
+                </label>
+                <div class="relative flex items-center">
+                  <span class="absolute left-3.5 text-stone-400 font-bold font-display text-sm">₦</span>
+                  <input type="number" id="ruleBudgetCap" required min="1000" step="100" class="w-full pl-8 pr-3 py-2.5 rounded-xl bg-stone-50 border border-stone-200 font-display font-bold text-stone-900 focus:outline-none focus:border-brand-500">
+                </div>
+              </div>
+              <div>
+                <label class="block font-bold text-stone-700 mb-1">
+                  Super Saver Threshold (₦)
+                  <span class="text-stone-400 font-normal ml-1">Meals at/below get "Super Saver 🪙"</span>
+                </label>
+                <div class="relative flex items-center">
+                  <span class="absolute left-3.5 text-stone-400 font-bold font-display text-sm">₦</span>
+                  <input type="number" id="ruleLowBudget" required min="500" step="50" class="w-full pl-8 pr-3 py-2.5 rounded-xl bg-stone-50 border border-stone-200 font-display font-bold text-stone-900 focus:outline-none focus:border-brand-500">
+                </div>
+              </div>
+              <div>
+                <label class="block font-bold text-stone-700 mb-1">
+                  Combos Limit Per Canteen
+                  <span class="text-stone-400 font-normal ml-1">Max variety allowed per food spot</span>
+                </label>
+                <select id="ruleCombosPerSpotLimit" class="w-full px-3 py-2.5 rounded-xl bg-stone-50 border border-stone-200 font-bold text-stone-900 focus:outline-none focus:border-brand-500 text-xs">
+                  <option value="15">15 combos (Compact)</option>
+                  <option value="25">25 combos (Balanced)</option>
+                  <option value="35">35 combos (Generous - Default)</option>
+                  <option value="50">50 combos (Extensive)</option>
+                  <option value="999">Unlimited (All permutations)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Combo Generation Permissions -->
+            <div>
+              <label class="block font-bold text-stone-700 mb-2">Allowed Meal Formations & Mixing Freedom</label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                <label class="flex items-center space-x-2.5 p-2.5 rounded-xl bg-stone-50 border border-stone-200 cursor-pointer hover:bg-stone-100/70 transition">
+                  <input type="checkbox" id="ruleAllowCoreDuos" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-stone-300">
+                  <div>
+                    <p class="font-bold text-stone-800 text-xs">Core Duos (Main + Protein)</p>
+                    <p class="text-[10px] text-stone-500">Essential 2-piece meal (e.g. Jollof Rice + Fried Chicken)</p>
+                  </div>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2.5 rounded-xl bg-stone-50 border border-stone-200 cursor-pointer hover:bg-stone-100/70 transition">
+                  <input type="checkbox" id="ruleAllowSides" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-stone-300">
+                  <div>
+                    <p class="font-bold text-stone-800 text-xs">Meals with Sides (Main + Protein + Side)</p>
+                    <p class="text-[10px] text-stone-500">Adds popular sides like fried plantain (dodo) or salad</p>
+                  </div>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2.5 rounded-xl bg-stone-50 border border-stone-200 cursor-pointer hover:bg-stone-100/70 transition">
+                  <input type="checkbox" id="ruleAllowDrinks" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-stone-300">
+                  <div>
+                    <p class="font-bold text-stone-800 text-xs">Meals with Drinks (Main + Protein + Drink)</p>
+                    <p class="text-[10px] text-stone-500">Includes cold zobo, malt, or drink with the meal</p>
+                  </div>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2.5 rounded-xl bg-stone-50 border border-stone-200 cursor-pointer hover:bg-stone-100/70 transition">
+                  <input type="checkbox" id="ruleAllowDoubleProtein" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-stone-300">
+                  <div>
+                    <p class="font-bold text-stone-800 text-xs">Double Protein (Main + 2 Proteins)</p>
+                    <p class="text-[10px] text-stone-500">e.g. Jollof Rice + Fried Chicken + Boiled Egg</p>
+                  </div>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2.5 rounded-xl bg-stone-50 border border-stone-200 cursor-pointer hover:bg-stone-100/70 transition">
+                  <input type="checkbox" id="ruleAllowCarbSides" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-stone-300">
+                  <div>
+                    <p class="font-bold text-stone-800 text-xs">Carb & Side Duos (Main + Side)</p>
+                    <p class="text-[10px] text-stone-500">Meatless budget combos e.g. Beans + Fried Plantain (Dodo)</p>
+                  </div>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2.5 rounded-xl bg-stone-50 border border-stone-200 cursor-pointer hover:bg-stone-100/70 transition">
+                  <input type="checkbox" id="ruleAllowSnackCombos" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-stone-300">
+                  <div>
+                    <p class="font-bold text-stone-800 text-xs">Snack & Drink Combos (Side + Drink)</p>
+                    <p class="text-[10px] text-stone-500">Quick refuels e.g. Meat Pie / Dodo + Cold Zobo Drink</p>
+                  </div>
+                </label>
+                <label class="flex items-center space-x-2.5 p-2.5 rounded-xl bg-stone-50 border border-stone-200 cursor-pointer hover:bg-stone-100/70 transition">
+                  <input type="checkbox" id="ruleAllowDeluxe" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-stone-300">
+                  <div>
+                    <p class="font-bold text-stone-800 text-xs">Deluxe Feast (Main + Protein + Side + Drink)</p>
+                    <p class="text-[10px] text-stone-500">Full 4-item combo for students with larger appetite</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Campus Pairing Blacklist -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block font-bold text-stone-700">
+                  Incompatible Food Blacklist
+                </label>
+                <span class="text-[10px] text-stone-400">One pairing per line (e.g. Item A + Item B)</span>
+              </div>
+              <textarea id="ruleBlacklist" rows="3" placeholder="Fruit Salad + Peppered Goat Meat&#10;Fruit Salad + Fried Titus Fish&#10;Fruit Salad + Soft Beef Suya" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-mono text-[11px] leading-relaxed focus:outline-none focus:border-brand-500"></textarea>
+              <p class="text-[10px] text-stone-500 mt-1">Rukky's Engine will never pair items together if they match any rule above.</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 border-t border-stone-100">
+              <button type="submit" id="saveRulesBtn" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 active:scale-98 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-1.5">
+                <span>💾 Save & Apply Engine Rules</span>
+              </button>
+              <button type="button" id="resetRulesBtn" class="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 active:scale-98 text-stone-600 font-bold rounded-xl text-xs transition flex items-center justify-center space-x-1">
+                <span>🔄 Reset to Defaults</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Budget Simulator & Search Toolbar -->
+        <div class="bg-white rounded-2xl p-3 sm:p-4 border border-stone-200 shadow-sm space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Student Budget Simulator</span>
+            <span class="text-xs text-brand-600 font-bold" id="budgetSimStatus">Showing all generated combos</span>
+          </div>
+          <div class="flex items-center space-x-1.5 overflow-x-auto no-scrollbar touch-scroll text-xs">
+            <button class="budget-sim-pill active px-3 py-1.5 rounded-full font-bold bg-stone-900 text-white shadow-sm shrink-0 transition" data-budget="all">
+              All Budgets
+            </button>
+            <button class="budget-sim-pill px-3 py-1.5 rounded-full font-bold bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200 shrink-0 transition" data-budget="1000">
+              ≤ ₦1,000
+            </button>
+            <button class="budget-sim-pill px-3 py-1.5 rounded-full font-bold bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200 shrink-0 transition" data-budget="1500">
+              ≤ ₦1,500
+            </button>
+            <button class="budget-sim-pill px-3 py-1.5 rounded-full font-bold bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200 shrink-0 transition" data-budget="2000">
+              ≤ ₦2,000
+            </button>
+            <button class="budget-sim-pill px-3 py-1.5 rounded-full font-bold bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200 shrink-0 transition" data-budget="2500">
+              ≤ ₦2,500
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-stone-900 font-display">Generated Student Meals</h3>
+            <p class="text-xs text-stone-500">Live preview of meals Wellspring students see on their app</p>
+          </div>
+        </div>
+
+        <!-- Mobile Card List View (< md) -->
+        <div class="block md:hidden space-y-3" id="combosMobileList">
+          <!-- Dynamically rendered mobile cards -->
+        </div>
+
+        <!-- Desktop Table View (>= md) -->
+        <div class="hidden md:block bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-stone-50 border-b border-stone-200 text-stone-400 font-bold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">Generated Combo</th>
+                  <th class="py-3 px-4">Canteen</th>
+                  <th class="py-3 px-4">Price (₦)</th>
+                  <th class="py-3 px-4">Category</th>
+                  <th class="py-3 px-4">Items Breakdown</th>
+                  <th class="py-3 px-4">Rukky's Score</th>
+                </tr>
+              </thead>
+              <tbody id="combosTableBody" class="divide-y divide-stone-100 font-medium">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: DAILY SPECIALS ================= -->
+      <section id="specialsTab" class="tab-content hidden space-y-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-stone-900 font-display">Today's Special Food Deals</h3>
+            <p class="text-xs text-stone-500">These appear on the top carousel of the student home screen</p>
+          </div>
+          <button id="openAddSpecialBtn" class="w-full sm:w-auto px-4 py-3 sm:py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-98 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+            <span>+ Add Daily Deal</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" id="specialsGrid">
+          <!-- Dynamically rendered cards -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: CAMPUS SPOTS ================= -->
+      <section id="spotsTab" class="tab-content hidden space-y-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-stone-900 font-display">Campus Food Spots</h3>
+            <p class="text-xs text-stone-500">Food canteens and shops inside Wellspring University</p>
+          </div>
+          <button id="openAddSpotBtn" class="w-full sm:w-auto px-4 py-3 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+            <span>+ Add Campus Spot</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" id="spotsGrid">
+          <!-- Dynamically rendered -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: STUDENT SUGGESTIONS ================= -->
+      <section id="suggestionsTab" class="tab-content hidden space-y-4">
+        <div>
+          <h3 class="text-lg font-bold text-stone-900 font-display">Student Food Suggestions</h3>
+          <p class="text-xs text-stone-500">Food suggestions submitted by students on the app. Approve them to immediately list them as available food items!</p>
+        </div>
+
+        <div id="suggestionsList" class="space-y-3">
+          <!-- Dynamically rendered -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 6: FIREBASE SETUP & SETTINGS ================= -->
+      <section id="settingsTab" class="tab-content hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-stone-200 p-4 sm:p-6 shadow-sm space-y-5 max-w-3xl">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-stone-900 font-display">Firebase Project Integration</h3>
+            <p class="text-xs text-stone-500 mt-1">Connect your Firebase project to enable live cloud sync for meals, daily deals, and student suggestions.</p>
+          </div>
+
+          <div class="bg-stone-50 p-3.5 sm:p-4 rounded-xl border border-stone-200 text-xs text-stone-600 space-y-1.5">
+            <p class="font-bold text-stone-800">Quick Guide to Setup Firebase:</p>
+            <ol class="list-decimal list-inside space-y-1 text-stone-600">
+              <li>Create a free Firebase project at <a href="https://console.firebase.google.com" target="_blank" class="text-brand-600 font-bold underline">console.firebase.google.com</a>.</li>
+              <li>Enable <strong>Firestore Database</strong> in test mode or production mode.</li>
+              <li>Enable <strong>Email/Password Authentication</strong> under Firebase Auth.</li>
+              <li>Go to Project Settings → General → "Your Apps" → Web App (<code>&lt;/&gt;</code>) and copy the <code>firebaseConfig</code> values below.</li>
+            </ol>
+          </div>
+
+          <form id="firebaseConfigForm" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">API Key</label>
+                <input type="text" id="fbApiKey" value="AIzaSyCPDQo2ZuTXDPL8n1_gLwJYDeFjX4zlthk" placeholder="AIzaSy..." class="w-full text-xs p-2.5 rounded-xl bg-stone-50 border border-stone-200">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Project ID</label>
+                <input type="text" id="fbProjectId" value="rukky-s-picks-81b70" placeholder="rukkys-picks" class="w-full text-xs p-2.5 rounded-xl bg-stone-50 border border-stone-200">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Auth Domain</label>
+                <input type="text" id="fbAuthDomain" value="rukky-s-picks-81b70.firebaseapp.com" placeholder="rukkys-picks.firebaseapp.com" class="w-full text-xs p-2.5 rounded-xl bg-stone-50 border border-stone-200">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Storage Bucket</label>
+                <input type="text" id="fbStorageBucket" value="rukky-s-picks-81b70.firebasestorage.app" placeholder="rukkys-picks.appspot.com" class="w-full text-xs p-2.5 rounded-xl bg-stone-50 border border-stone-200">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">Messaging Sender ID</label>
+                <input type="text" id="fbSenderId" value="1065689441210" placeholder="123456789" class="w-full text-xs p-2.5 rounded-xl bg-stone-50 border border-stone-200">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1">App ID</label>
+                <input type="text" id="fbAppId" value="1:1065689441210:web:baa77858effd7c9ea23383" placeholder="1:123456:web:abcd..." class="w-full text-xs p-2.5 rounded-xl bg-stone-50 border border-stone-200">
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2">
+              <button type="submit" class="w-full sm:w-auto px-5 py-3 sm:py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs rounded-xl shadow transition text-center active:scale-98">
+                Save & Connect Firebase
+              </button>
+              <button type="button" id="clearFbConfigBtn" class="w-full sm:w-auto px-4 py-3 sm:py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold text-xs rounded-xl transition text-center active:scale-98">
+                Clear Config (Return to Local Mode)
+              </button>
+            </div>
+          </form>
+
+          <!-- Cloud Firestore Operations -->
+          <div class="pt-5 border-t border-stone-200 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h4 class="text-sm font-bold text-stone-900 mb-0.5">Cloud Firestore Database Control</h4>
+                <p class="text-xs text-stone-500">Target Project: <code class="font-bold text-stone-700">rukky-s-picks-81b70</code></p>
+              </div>
+              <button type="button" id="checkCloudStatusBtn" class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition flex items-center space-x-1 shrink-0">
+                <span>🔍 Check Cloud Counts</span>
+              </button>
+            </div>
+
+            <!-- Cloud Stats Display -->
+            <div id="cloudStatsBar" class="hidden p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs flex flex-wrap gap-3 items-center justify-between">
+              <span id="cloudItemsBadge" class="font-bold text-stone-700">Items: <b>...</b></span>
+              <span id="cloudCombosBadge" class="font-bold text-stone-700">Combos: <b>...</b></span>
+              <span id="cloudSpecialsBadge" class="font-bold text-stone-700">Specials: <b>...</b></span>
+              <span id="cloudSpotsBadge" class="font-bold text-stone-700">Spots: <b>...</b></span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2 pt-1">
+              <button id="clearCloudFirestoreBtn" type="button" class="w-full sm:w-auto px-4 py-2.5 bg-red-600 hover:bg-red-700 active:scale-98 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <span>🚨 Delete All Meals from Cloud Firestore</span>
+              </button>
+              <a href="clear-cloud.html" target="_blank" class="w-full sm:w-auto px-4 py-2.5 bg-stone-900 hover:bg-stone-800 active:scale-98 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5 text-center">
+                <span>Open Dedicated Wiper Page ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Data Backup & Restore Section -->
+          <div class="pt-6 border-t border-stone-200 space-y-3">
+            <div>
+              <h4 class="text-sm sm:text-base font-bold text-stone-900 font-display flex items-center space-x-1.5">
+                <span>💾</span>
+                <span>Campus Data Backup & Restore</span>
+              </h4>
+              <p class="text-xs text-stone-500 mt-0.5">
+                Export and save all campus food items, spots, daily specials, and engine rules as a single JSON file. You can restore this backup anytime.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <!-- Export Card -->
+              <div class="p-4 rounded-xl border border-stone-200 bg-stone-50 space-y-2 flex flex-col justify-between">
+                <div>
+                  <h5 class="font-bold text-xs text-stone-800 flex items-center space-x-1">
+                    <span>📥</span>
+                    <span>Export Data Backup</span>
+                  </h5>
+                  <p class="text-[11px] text-stone-500 mt-0.5">
+                    Download a clean JSON file containing all current food items, spots, deals, and mixing rules.
+                  </p>
+                </div>
+                <button type="button" id="exportBackupBtn" class="w-full py-2.5 px-3 bg-stone-900 hover:bg-stone-800 active:scale-98 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  <span>Download Backup (.json)</span>
+                </button>
+              </div>
+
+              <!-- Restore Card -->
+              <div class="p-4 rounded-xl border border-stone-200 bg-stone-50 space-y-2 flex flex-col justify-between">
+                <div>
+                  <h5 class="font-bold text-xs text-stone-800 flex items-center space-x-1">
+                    <span>📤</span>
+                    <span>Restore from Backup</span>
+                  </h5>
+                  <p class="text-[11px] text-stone-500 mt-0.5">
+                    Upload and restore all items and settings from a previously saved JSON backup file.
+                  </p>
+                </div>
+                <input type="file" id="importBackupInput" accept=".json,application/json" class="hidden">
+                <button type="button" id="importBackupBtn" class="w-full py-2.5 px-3 bg-emerald-700 hover:bg-emerald-800 active:scale-98 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12"></path></svg>
+                  <span>Upload & Restore (.json)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Danger Zone: Reset to Clean Slate -->
+            <div class="mt-4 pt-4 border-t border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h5 class="font-bold text-xs text-red-700 flex items-center space-x-1">
+                  <span>🧹</span>
+                  <span>Clear All Food Items & Start Fresh</span>
+                </h5>
+                <p class="text-[11px] text-stone-500 mt-0.5">
+                  Wipes all food items and specials so you can start adding 100% real campus meals with zero mock data.
+                </p>
+              </div>
+              <button type="button" id="clearAllMealsBtn" class="w-full sm:w-auto shrink-0 py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 active:scale-98 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <span>Wipe All Food Items</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT INDIVIDUAL FOOD ITEM ================= -->
+  <div id="itemModal" class="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto pb-8 sm:pb-6">
+      <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-3 sm:hidden"></div>
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+        <div>
+          <h3 class="font-bold text-stone-900 text-base sm:text-lg font-display" id="itemModalTitle">Add Food Item & Price</h3>
+          <p class="text-[11px] text-stone-500">Add individual food item. Rukky's Engine mixes it automatically!</p>
+        </div>
+        <button class="modal-close p-2 rounded-full text-stone-400 hover:bg-stone-100 active:scale-95">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <form id="itemForm" class="mt-4 space-y-3.5 text-xs">
+        <input type="hidden" id="itemEditId">
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Item Name *</label>
+          <input type="text" id="itemName" required placeholder="e.g. Boiled Egg, Jollof Rice, Fried Beef" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-brand-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">Price in Naira (₦) *</label>
+            <div class="relative flex items-center">
+              <span class="absolute left-3.5 text-stone-400 font-bold font-display text-base">₦</span>
+              <input type="number" id="itemPrice" required min="50" step="50" placeholder="500" class="w-full pl-8 pr-3 py-3 rounded-xl bg-stone-50 border border-stone-200 font-display font-bold text-base text-stone-900 focus:outline-none focus:border-brand-500">
+            </div>
+          </div>
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">Item Category *</label>
+            <select id="itemCategory" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-brand-500">
+              <option value="main">🍚 Main / Staple</option>
+              <option value="protein">🍗 Protein</option>
+              <option value="side">🍟 Side Dish</option>
+              <option value="drink">🥤 Drink</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Canteen / Campus Spot *</label>
+          <select id="itemSpotSelect" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-brand-500">
+            <!-- Dynamically populated spots -->
+          </select>
+        </div>
+
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="itemAvailable" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-stone-300">
+          <label for="itemAvailable" class="text-xs font-bold text-stone-700">Available in canteen today</label>
+        </div>
+
+        <button type="submit" id="saveItemBtn" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 active:scale-98 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md transition mt-2">
+          Save Food Item
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT SPECIAL ================= -->
+  <div id="specialModal" class="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto pb-8 sm:pb-6">
+      <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-3 sm:hidden"></div>
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+        <div>
+          <h3 class="font-bold text-stone-900 text-base sm:text-lg font-display" id="specialModalTitle">Add Daily Deal</h3>
+          <p class="text-[11px] text-stone-500">Special curated combo deals featured on student banner</p>
+        </div>
+        <button class="modal-close p-2 rounded-full text-stone-400 hover:bg-stone-100 active:scale-95">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <form id="specialForm" class="mt-4 space-y-3.5 text-xs">
+        <input type="hidden" id="specialEditId">
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Canteen / Spot Name *</label>
+          <input type="text" id="specialVendor" required placeholder="e.g. Mama Joy's (School Gate)" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Deal Badge Label *</label>
+          <input type="text" id="specialBadge" required placeholder="e.g. Friday Special Deal 🔥" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Deal Title *</label>
+          <input type="text" id="specialTitle" required placeholder="e.g. Special Fried Rice + Plantain + Peppered Goat Meat" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Special Price (₦) *</label>
+          <div class="relative flex items-center">
+            <span class="absolute left-3.5 text-stone-400 font-bold font-display text-base">₦</span>
+            <input type="number" id="specialPrice" required min="100" step="50" placeholder="2400" class="w-full pl-8 pr-3 py-3 rounded-xl bg-stone-50 border border-stone-200 font-display font-bold text-base text-stone-900 focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Rukky’s Review Pitch</label>
+          <textarea id="specialPitch" rows="2" placeholder="Explain why students should buy this today..." class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-amber-500"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md transition mt-2">
+          Save Daily Deal
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT SPOT ================= -->
+  <div id="spotModal" class="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto pb-8 sm:pb-6">
+      <div class="w-12 h-1.5 bg-stone-200 rounded-full mx-auto mb-3 sm:hidden"></div>
+      <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+        <div>
+          <h3 class="font-bold text-stone-900 text-base sm:text-lg font-display" id="spotModalTitle">Add Campus Food Spot</h3>
+          <p class="text-[11px] text-stone-500">Add or edit canteen name and campus location</p>
+        </div>
+        <button class="modal-close p-2 rounded-full text-stone-400 hover:bg-stone-100 active:scale-95">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <form id="spotForm" class="mt-4 space-y-3.5 text-xs">
+        <input type="hidden" id="spotEditId">
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Spot / Canteen Name *</label>
+          <input type="text" id="spotName" required placeholder="e.g. Main Campus Cafeteria" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">Location Tag *</label>
+            <input type="text" id="spotTag" required placeholder="e.g. Near School Gate" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="block font-bold text-stone-700 mb-1">Operating Hours</label>
+            <input type="text" id="spotTiming" placeholder="e.g. 8:00 AM - 9:00 PM" class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-stone-700 mb-1">Description / Food Known For</label>
+          <textarea id="spotDescription" rows="2" placeholder="Known for rice varieties, swallow, fresh fish..." class="w-full p-3 rounded-xl bg-stone-50 border border-stone-200 font-medium focus:outline-none focus:border-emerald-500"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-bold rounded-xl text-xs sm:text-sm shadow-md transition mt-2">
+          Save Campus Spot
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-stone-900 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none flex items-center space-x-2">
+    <span id="toastIcon">✨</span>
+    <span id="toastMsg">Action successful</span>
+  </div>
+
+  <!-- Load Database Service, Rukky's Engine & Admin Logic -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
