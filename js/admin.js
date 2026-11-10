@@ -1019,6 +1019,46 @@ if (clearCloudBtn) {
   });
 }
 
+// --- 1-CLICK CLOUD PUSH / SYNC HANDLERS ---
+async function handleCloudPush(triggerBtn) {
+  if (!window.dbService || !window.dbService.syncLocalToCloud) return;
+
+  const originalHtml = triggerBtn ? triggerBtn.innerHTML : '';
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.innerHTML = `<span>Syncing to Cloud... ⏳</span>`;
+  }
+
+  try {
+    showToast("Connecting and pushing meals to Cloud Firestore... ⏳", "☁️");
+    const result = await window.dbService.syncLocalToCloud();
+    updateCloudStatus();
+    showToast(`✅ Synced! ${result.itemsCount} food items and rules live on all devices! 🚀`, '☁️');
+  } catch (err) {
+    alert("Cloud Sync Error: " + (err.message || err));
+  } finally {
+    if (triggerBtn) {
+      triggerBtn.disabled = false;
+      triggerBtn.innerHTML = originalHtml;
+    }
+  }
+}
+
+const quickCloudSyncBtn = document.getElementById('quickCloudSyncBtn');
+if (quickCloudSyncBtn) {
+  quickCloudSyncBtn.addEventListener('click', () => handleCloudPush(quickCloudSyncBtn));
+}
+
+const syncItemsToCloudBtn = document.getElementById('syncItemsToCloudBtn');
+if (syncItemsToCloudBtn) {
+  syncItemsToCloudBtn.addEventListener('click', () => handleCloudPush(syncItemsToCloudBtn));
+}
+
+const pushAllToCloudBtn = document.getElementById('pushAllToCloudBtn');
+if (pushAllToCloudBtn) {
+  pushAllToCloudBtn.addEventListener('click', () => handleCloudPush(pushAllToCloudBtn));
+}
+
 // --- RUKKY'S ENGINE RULES MANAGEMENT ---
 function syncEngineRulesForm(rules) {
   const current = rules || (window.dbService ? window.dbService.getEngineRulesSync() : window.DEFAULT_ENGINE_RULES);

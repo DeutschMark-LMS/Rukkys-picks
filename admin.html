@@ -153,11 +153,17 @@
         <!-- Right Quick Actions -->
         <div class="flex items-center space-x-1 sm:space-x-2 shrink-0">
           <!-- Cloud Status Badge -->
-          <span id="cloudStatusBadge" class="text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded-full font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center space-x-1.5">
+          <span id="cloudStatusBadge" class="text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded-full font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center space-x-1.5 cursor-pointer" title="Click to view cloud settings">
             <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
             <span id="cloudStatusText" class="hidden md:inline">Local Demo Mode</span>
             <span class="md:hidden">Local</span>
           </span>
+
+          <!-- Quick Cloud Push Button -->
+          <button id="quickCloudSyncBtn" type="button" title="Push all local meals, deals & rules to Cloud Firestore" class="px-2.5 sm:px-3 py-1.5 bg-brand-600 hover:bg-brand-500 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center space-x-1 shrink-0">
+            <span>☁️</span>
+            <span class="hidden sm:inline">Push to Cloud</span>
+          </button>
 
           <a href="vendor.html" title="Vendor Portal" class="px-2 sm:px-3 py-1.5 bg-stone-800 hover:bg-stone-700 active:scale-95 text-stone-200 text-xs font-semibold rounded-xl border border-stone-700 flex items-center space-x-1 sm:space-x-1.5 transition">
             <span class="text-sm">🏪</span>
@@ -260,10 +266,15 @@
             <h3 class="text-base sm:text-lg font-bold text-stone-900 font-display">Campus Food Items & Prices</h3>
             <p class="text-xs text-stone-500">Individual food items entered per canteen. Rukky's Engine automatically mixes them!</p>
           </div>
-          <button id="openAddItemBtn" class="w-full sm:w-auto px-4 py-3 sm:py-2.5 bg-brand-600 hover:bg-brand-700 active:scale-98 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/20 flex items-center justify-center space-x-1.5 transition shrink-0">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-            <span>+ Add Food Item</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button id="syncItemsToCloudBtn" type="button" class="w-full sm:w-auto px-3.5 py-3 sm:py-2.5 bg-stone-900 hover:bg-stone-800 active:scale-98 text-white text-xs font-bold rounded-xl shadow transition flex items-center justify-center space-x-1.5 shrink-0" title="Upload all current food items to Cloud Firestore">
+              <span>☁️ Push to Cloud</span>
+            </button>
+            <button id="openAddItemBtn" class="w-full sm:w-auto px-4 py-3 sm:py-2.5 bg-brand-600 hover:bg-brand-700 active:scale-98 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/20 flex items-center justify-center space-x-1.5 transition shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+              <span>+ Add Food Item</span>
+            </button>
+          </div>
         </div>
 
         <!-- Filter Controls Toolbar (Responsive Grid/Flex) -->
@@ -685,6 +696,22 @@
               <a href="clear-cloud.html" target="_blank" class="w-full sm:w-auto px-4 py-2.5 bg-stone-900 hover:bg-stone-800 active:scale-98 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5 text-center">
                 <span>Open Dedicated Wiper Page ↗</span>
               </a>
+            </div>
+
+            <!-- 1-Click Push All Local Data to Cloud -->
+            <div class="p-3.5 sm:p-4 bg-orange-50 rounded-xl border border-orange-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h5 class="font-bold text-xs text-brand-900 flex items-center space-x-1.5">
+                  <span>☁️</span>
+                  <span>Push All Current Meals, Deals & Rules to Cloud Firestore</span>
+                </h5>
+                <p class="text-[11px] text-stone-600 mt-0.5">
+                  Takes all items, spots, specials, and engine rules currently in your browser and uploads them to the cloud so they reflect everywhere in real time.
+                </p>
+              </div>
+              <button type="button" id="pushAllToCloudBtn" class="w-full sm:w-auto shrink-0 py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white active:scale-98 font-bold text-xs rounded-xl shadow transition flex items-center justify-center space-x-1.5">
+                <span>🚀 Push All to Cloud</span>
+              </button>
             </div>
           </div>
 

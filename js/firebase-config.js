@@ -783,6 +783,57 @@ const dbService = {
     console.log("Rukky's Picks: Seed data successfully written to Firestore! 🎉");
   },
 
+  // --- 1-CLICK PUSH ALL CURRENT LOCAL MEALS & RULES TO CLOUD FIRESTORE ---
+  async syncLocalToCloud() {
+    if (!this.isUsingFirebase()) {
+      const cfg = this.getSavedConfig() || DEFAULT_FIREBASE_CONFIG;
+      localStorage.setItem(STORAGE_KEYS.FIREBASE_CONFIG, JSON.stringify(cfg));
+      initFirebase();
+      if (!this.isUsingFirebase()) {
+        throw new Error("Could not connect to Firebase Cloud. Please check your internet connection.");
+      }
+    }
+
+    const items = this.getItemsSync();
+    const spots = this.getSpotsSync();
+    const specials = this.getSpecialsSync();
+    const engineRules = this.getEngineRulesSync();
+
+    const batch = firestoreDb.batch();
+
+    // 1. Food Items
+    for (const it of items) {
+      const ref = firestoreDb.collection('items').doc(it.id);
+      batch.set(ref, it);
+    }
+
+    // 2. Spots
+    for (const sp of spots) {
+      const ref = firestoreDb.collection('spots').doc(sp.id);
+      batch.set(ref, sp);
+    }
+
+    // 3. Specials
+    for (const s of specials) {
+      const ref = firestoreDb.collection('specials').doc(s.id);
+      batch.set(ref, s);
+    }
+
+    // 4. Engine Rules
+    const ruleRef = firestoreDb.collection('config').doc('engine_rules');
+    batch.set(ruleRef, engineRules);
+
+    await batch.commit();
+    console.log(`Rukky's Picks: Successfully pushed ${items.length} items, ${spots.length} spots, and rules to Cloud Firestore! ☁️`);
+
+    return {
+      itemsCount: items.length,
+      spotsCount: spots.length,
+      specialsCount: specials.length,
+      timestamp: new Date().toISOString()
+    };
+  },
+
   // --- RUKKY'S ENGINE RULES METHODS ---
   getEngineRulesSync() {
     try {
