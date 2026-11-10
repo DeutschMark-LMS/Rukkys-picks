@@ -26,7 +26,12 @@ let currentComboBudgetFilter = 'all';
 
 // DOM Elements
 const authGate = document.getElementById('authGate');
-const loginForm = document.getElementById('loginForm');
+const passcodeForm = document.getElementById('passcodeForm');
+const adminPasscodeInput = document.getElementById('adminPasscodeInput');
+const passcodeError = document.getElementById('passcodeError');
+const passcodeErrorText = document.getElementById('passcodeErrorText');
+const togglePasscodeBtn = document.getElementById('togglePasscodeVisibilityBtn');
+const eyeIcon = document.getElementById('eyeIcon');
 const quickDemoLoginBtn = document.getElementById('quickDemoLoginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const userEmailBadge = document.getElementById('userEmailBadge');
@@ -53,72 +58,140 @@ function showToast(msg, icon = '✨') {
   }
 }
 
-// --- Auth Handling ---
+// --- Auth Handling (Passcode Only) ---
 function initAuth() {
-  const submitBtn = loginForm.querySelector('button[type="submit"]');
+  const submitBtn = document.getElementById('unlockAdminBtn');
+
+  // Eye toggle to show/hide passcode
+  if (togglePasscodeBtn && adminPasscodeInput) {
+    togglePasscodeBtn.addEventListener('click', () => {
+      const isPassword = adminPasscodeInput.type === 'password';
+      adminPasscodeInput.type = isPassword ? 'text' : 'password';
+      if (eyeIcon) {
+        eyeIcon.innerHTML = isPassword
+          ? '<path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path>'
+          : '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
+      }
+    });
+  }
 
   window.authService.onAuthStateChanged(user => {
     currentUser = user;
     if (user) {
-      authGate.classList.add('hidden');
-      userEmailBadge.textContent = user.email || 'Admin User';
+      if (authGate) authGate.classList.add('hidden');
+      if (userEmailBadge) userEmailBadge.textContent = 'Admin (Unlocked 🛡️)';
       updateCloudStatus();
       initDataListeners();
     } else {
-      authGate.classList.remove('hidden');
-    }
-  });
-
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value.trim();
-
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Signing in... ⏳";
-    }
-
-    try {
-      const user = await window.authService.login(email, password);
-      currentUser = user;
-      authGate.classList.add('hidden');
-      userEmailBadge.textContent = user.email || 'Admin User';
-      updateCloudStatus();
-      initDataListeners();
-      showToast('Signed in successfully! Welcome, Admin 👋', '👋');
-    } catch (err) {
-      alert('Login failed: ' + (err.message || err));
-    } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Sign In as Admin";
+      if (authGate) authGate.classList.remove('hidden');
+      if (adminPasscodeInput) {
+        adminPasscodeInput.focus();
       }
     }
   });
 
-  quickDemoLoginBtn.addEventListener('click', () => {
-    quickDemoLoginBtn.disabled = true;
-    quickDemoLoginBtn.textContent = "Signing in... ⏳";
-    const user = window.authService.demoLogin();
-    currentUser = user;
-    authGate.classList.add('hidden');
-    userEmailBadge.textContent = user.email || 'Admin User';
-    updateCloudStatus();
-    initDataListeners();
-    showToast('Signed in as Demo Admin! 🚀', '🚀');
-    setTimeout(() => {
-      quickDemoLoginBtn.disabled = false;
-      quickDemoLoginBtn.innerHTML = "<span>⚡ Enter Admin Demo (No password needed)</span>";
-    }, 1000);
-  });
+  if (passcodeForm) {
+    passcodeForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = adminPasscodeInput ? adminPasscodeInput.value.trim() : '';
 
-  logoutBtn.addEventListener('click', async () => {
-    await window.authService.logout();
-    currentUser = null;
-    authGate.classList.remove('hidden');
-    showToast('Signed out of Admin Dashboard', '👋');
-  });
+      if (passcodeError) passcodeError.classList.add('hidden');
+
+      if (!code) {
+        if (passcodeError) {
+          if (passcodeErrorText) passcodeErrorText.textContent = "Please enter the admin passcode.";
+          passcodeError.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Verifying... ⏳";
+      }
+
+      try {
+        const user = window.authService.loginWithPasscode(code);
+        currentUser = user;
+        if (authGate) authGate.classList.add('hidden');
+        if (userEmailBadge) userEmailBadge.textContent = 'Admin (Unlocked 🛡️)';
+        updateCloudStatus();
+        initDataListeners();
+        showToast('Portal unlocked! Welcome, Admin 👋', '🔓');
+      } catch (err) {
+        if (passcodeError) {
+          if (passcodeErrorText) passcodeErrorText.textContent = err.message || "Incorrect passcode. Please try again.";
+          passcodeError.classList.remove('hidden');
+        }
+        if (adminPasscodeInput) {
+          adminPasscodeInput.classList.add('border-red-500', 'bg-red-50/50');
+          setTimeout(() => {
+            adminPasscodeInput.classList.remove('border-red-500', 'bg-red-50/50');
+          }, 1500);
+          adminPasscodeInput.select();
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = "<span>🔓 Unlock Admin Portal</span>";
+        }
+      }
+    });
+  }
+
+  if (quickDemoLoginBtn) {
+    quickDemoLoginBtn.addEventListener('click', () => {
+      const defaultPass = window.authService.getAdminPasscode ? window.authService.getAdminPasscode() : 'admin123';
+      if (adminPasscodeInput) adminPasscodeInput.value = defaultPass;
+      try {
+        const user = window.authService.loginWithPasscode(defaultPass);
+        currentUser = user;
+        if (authGate) authGate.classList.add('hidden');
+        if (userEmailBadge) userEmailBadge.textContent = 'Admin (Unlocked 🛡️)';
+        updateCloudStatus();
+        initDataListeners();
+        showToast('Portal unlocked with passcode! 🚀', '🚀');
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  }
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      await window.authService.logout();
+      currentUser = null;
+      if (authGate) authGate.classList.remove('hidden');
+      if (adminPasscodeInput) {
+        adminPasscodeInput.value = '';
+        adminPasscodeInput.focus();
+      }
+      showToast('Admin Portal Locked 🔒', '🔒');
+    });
+  }
+
+  // Change Admin Passcode in Tab 6 Settings
+  const changePasscodeForm = document.getElementById('changePasscodeForm');
+  if (changePasscodeForm) {
+    const newPasscodeInput = document.getElementById('newPasscodeInput');
+    if (newPasscodeInput && window.authService.getAdminPasscode) {
+      newPasscodeInput.value = window.authService.getAdminPasscode();
+    }
+    changePasscodeForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newCode = newPasscodeInput ? newPasscodeInput.value.trim() : '';
+      if (!newCode) {
+        alert('Please enter a valid passcode.');
+        return;
+      }
+      try {
+        window.authService.setAdminPasscode(newCode);
+        showToast(`Admin passcode updated to "${newCode}"! 🔑`, '🔑');
+      } catch (err) {
+        alert('Error updating passcode: ' + err.message);
+      }
+    });
+  }
 }
 
 function updateCloudStatus() {

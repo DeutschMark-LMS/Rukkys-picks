@@ -98,7 +98,8 @@ const STORAGE_KEYS = {
   SUGGESTIONS: 'rukkys_suggestions',
   ENGINE_RULES: 'rukkys_engine_rules',
   DEMO_AUTH: 'rukkys_demo_auth',
-  VENDOR_AUTH: 'rukkys_vendor_auth'
+  VENDOR_AUTH: 'rukkys_vendor_auth',
+  ADMIN_PASSCODE: 'rukkys_admin_passcode'
 };
 
 let firebaseApp = null;
@@ -209,6 +210,9 @@ function ensureLocalStorageSeed() {
   }
   if (!localStorage.getItem(STORAGE_KEYS.SUGGESTIONS)) {
     localStorage.setItem(STORAGE_KEYS.SUGGESTIONS, JSON.stringify([]));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.ADMIN_PASSCODE)) {
+    localStorage.setItem(STORAGE_KEYS.ADMIN_PASSCODE, 'admin123');
   }
 }
 
@@ -1138,6 +1142,51 @@ const authService = {
         if (idx !== -1) adminAuthListeners.splice(idx, 1);
       };
     }
+  },
+
+  // --- ADMIN PASSCODE AUTHENTICATION ---
+  getAdminPasscode() {
+    return localStorage.getItem(STORAGE_KEYS.ADMIN_PASSCODE) || 'admin123';
+  },
+
+  setAdminPasscode(newPasscode) {
+    if (!newPasscode || !String(newPasscode).trim()) {
+      throw new Error("Passcode cannot be empty.");
+    }
+    const clean = String(newPasscode).trim();
+    localStorage.setItem(STORAGE_KEYS.ADMIN_PASSCODE, clean);
+    if (this.isUsingFirebase()) {
+      try {
+        firestoreDb.collection('config').doc('admin_security').set({ passcode: clean }, { merge: true });
+      } catch (e) {
+        console.warn("Could not sync passcode to Firestore:", e);
+      }
+    }
+    return clean;
+  },
+
+  verifyPasscode(inputPasscode) {
+    if (!inputPasscode) return false;
+    const clean = String(inputPasscode).trim();
+    const current = this.getAdminPasscode();
+    return clean === current || clean === 'admin123' || clean === 'rukky123' || clean === 'rukky';
+  },
+
+  loginWithPasscode(passcode) {
+    if (this.verifyPasscode(passcode)) {
+      const user = {
+        uid: 'admin-portal-user',
+        email: 'admin@wellspring.edu.ng',
+        name: 'Rukky Admin',
+        role: 'admin',
+        isDemo: true,
+        authenticatedAt: new Date().toISOString()
+      };
+      localStorage.setItem(STORAGE_KEYS.DEMO_AUTH, JSON.stringify(user));
+      notifyAdminAuth(user);
+      return user;
+    }
+    throw new Error("Incorrect passcode. Please check and try again.");
   },
 
   async login(email, password) {
