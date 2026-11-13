@@ -9,38 +9,31 @@
 const DEFAULT_SPOTS = [
   {
     id: "main-caf",
-    name: "Main Campus Cafeteria",
-    tag: "Campus Center",
-    timing: "7:30 AM - 8:30 PM",
-    description: "Located inside the student center. Serves different types of rice, swallow, beans, and fresh meat or fish."
+    name: "Iya Beji",
+    tag: "Cafeteria",
+    timing: "8:30 AM - 8:30 PM",
+    description: "Located at the right of cafeteria, known for homely meals"
   },
   {
     id: "bukka-gate",
-    name: "Mama Joy's Food Canteen (School Gate)",
-    tag: "Near School Gate",
-    timing: "8:00 AM - 9:00 PM",
-    description: "Located near the university gate. Famous for big portions of pounded yam, egusi soup, and peppered goat meat."
+    name: "Fuse Noodles",
+    tag: "Near Cafeteria",
+    timing: "8:30 AM - 8:30 PM",
+    description: "Located near the Cafeteria. Known for spicy hot noodles, Bread and egg e.t.c"
   },
   {
     id: "night-grill",
-    name: "Uncle T's Evening Spot",
-    tag: "Night Stand",
-    timing: "5:30 PM - 10:30 PM",
-    description: "A popular place for students in the evening. Serves hot beef suya, shawarma, and fried chips."
+    name: "Vicky's Kitchen",
+    tag: "Cafeteria",
+    timing: "8:30 AM - 8:30 PM",
+    description: "Located at the left of the Cafeteria. Very Friendly Vendors."
   },
   {
     id: "hostel-tuck",
-    name: "Hostel Block B Tuck Shop",
-    tag: "Hostel Area",
-    timing: "8:00 AM - 11:00 PM",
-    description: "The closest shop for students living in the hostel. Sells cooked noodles, boiled eggs, bread, tea, and cold drinks."
-  },
-  {
-    id: "green-smoothie",
-    name: "Fresh Fruit and Juice Corner",
-    tag: "Student Arcade",
-    timing: "9:00 AM - 6:00 PM",
-    description: "Serves fresh fruit salads, cold tiger nut drink, sweet yoghurt bowls, and sweet potatoes with egg sauce."
+    name: "Uwaila's Kitchen",
+    tag: "Cafeteria",
+    timing: "8:30 AM - 8:30pm",
+    description: "Beside the cafeteria."
   }
 ];
 
@@ -111,22 +104,27 @@ let isFirebaseActive = false;
 function initFirebase() {
   const savedConfig = localStorage.getItem(STORAGE_KEYS.FIREBASE_CONFIG);
 
-  // If user explicitly chose local mode or has not saved config, run in pure Local Storage Mode
-  if (!savedConfig || savedConfig === 'local') {
+  // If user explicitly chose local mode in Tab 6 settings, stay offline
+  if (savedConfig === 'local') {
     isFirebaseActive = false;
     firestoreDb = null;
     firebaseAuth = null;
-    console.info("Rukky's Picks: Running in pure Local Storage Mode (Offline & Reliable).");
+    console.info("Rukky's Picks: Running in Local Storage Mode (explicitly set by admin).");
     return false;
   }
 
-  let config = null;
-  try {
-    const parsed = JSON.parse(savedConfig);
-    if (parsed && parsed.apiKey && parsed.projectId) {
-      config = parsed;
+  // Use saved custom config if provided, otherwise default to the live Cloud Firestore project
+  let config = DEFAULT_FIREBASE_CONFIG;
+  if (savedConfig) {
+    try {
+      const parsed = JSON.parse(savedConfig);
+      if (parsed && parsed.apiKey && parsed.projectId) {
+        config = parsed;
+      }
+    } catch (e) {
+      config = DEFAULT_FIREBASE_CONFIG;
     }
-  } catch (e) {}
+  }
 
   if (!config || !config.apiKey || !config.projectId) {
     isFirebaseActive = false;
@@ -162,33 +160,19 @@ function initFirebase() {
 
 // Ensure Local Storage has initial seed data
 function ensureLocalStorageSeed() {
-  const SEED_VERSION = 'v6_stable_local';
+  const SEED_VERSION = 'v8_cloud_first';
   const currentVersion = localStorage.getItem('rukkys_seed_version');
 
   if (currentVersion !== SEED_VERSION) {
-    // Only initialize empty keys if not already present; NEVER wipe items user already entered!
-    if (!localStorage.getItem(STORAGE_KEYS.ITEMS)) {
-      localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify([]));
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.COMBOS)) {
-      localStorage.setItem(STORAGE_KEYS.COMBOS, JSON.stringify([]));
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.SPECIALS)) {
-      localStorage.setItem(STORAGE_KEYS.SPECIALS, JSON.stringify([]));
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.SPOTS)) {
-      localStorage.setItem(STORAGE_KEYS.SPOTS, JSON.stringify(DEFAULT_SPOTS));
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.ENGINE_RULES)) {
-      localStorage.setItem(STORAGE_KEYS.ENGINE_RULES, JSON.stringify(DEFAULT_ENGINE_RULES));
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.SUGGESTIONS)) {
-      localStorage.setItem(STORAGE_KEYS.SUGGESTIONS, JSON.stringify([]));
-    }
-    // Default to 'local' so external cloud data does not overwrite local changes
+    // If browser had old forced 'local' setting from v6 seed, clear it so it connects to Cloud Firestore
     const curFb = localStorage.getItem(STORAGE_KEYS.FIREBASE_CONFIG);
-    if (!curFb || curFb === 'null') {
-      localStorage.setItem(STORAGE_KEYS.FIREBASE_CONFIG, 'local');
+    if (!curFb || curFb === 'null' || curFb === 'local') {
+      localStorage.removeItem(STORAGE_KEYS.FIREBASE_CONFIG);
+    }
+    // Update spots to the real campus spots if spots was empty or had the old mock spots
+    const existingSpotsRaw = localStorage.getItem(STORAGE_KEYS.SPOTS);
+    if (!existingSpotsRaw || existingSpotsRaw.includes("Mama Joy's Food Canteen") || existingSpotsRaw.includes("Main Campus Cafeteria")) {
+      localStorage.setItem(STORAGE_KEYS.SPOTS, JSON.stringify(DEFAULT_SPOTS));
     }
     localStorage.setItem('rukkys_seed_version', SEED_VERSION);
   }
@@ -327,12 +311,7 @@ const dbService = {
     // 2. Sync to Firestore if active
     if (this.isUsingFirebase()) {
       try {
-        if (item.id) {
-          await firestoreDb.collection('items').doc(item.id).set(newItem);
-        } else {
-          const docRef = await firestoreDb.collection('items').add(newItem);
-          newItem.id = docRef.id;
-        }
+        await firestoreDb.collection('items').doc(newItem.id).set(newItem);
       } catch (err) {
         console.warn("Could not sync item to Firestore:", err);
       }
@@ -354,7 +333,7 @@ const dbService = {
     // 2. Sync to Firestore if active
     if (this.isUsingFirebase()) {
       try {
-        await firestoreDb.collection('items').doc(id).update(item);
+        await firestoreDb.collection('items').doc(id).set(item, { merge: true });
       } catch (err) {
         console.warn("Could not update item in Firestore:", err);
       }
@@ -429,12 +408,7 @@ const dbService = {
     // 2. Sync to Firestore if active
     if (this.isUsingFirebase()) {
       try {
-        if (combo.id) {
-          await firestoreDb.collection('combos').doc(combo.id).set(newCombo);
-        } else {
-          const docRef = await firestoreDb.collection('combos').add(newCombo);
-          newCombo.id = docRef.id;
-        }
+        await firestoreDb.collection('combos').doc(newCombo.id).set(newCombo);
       } catch (err) {
         console.warn("Could not sync combo to Firestore:", err);
       }
@@ -456,7 +430,7 @@ const dbService = {
     // 2. Sync to Firestore if active
     if (this.isUsingFirebase()) {
       try {
-        await firestoreDb.collection('combos').doc(id).update(combo);
+        await firestoreDb.collection('combos').doc(id).set(combo, { merge: true });
       } catch (err) {
         console.warn("Could not update combo in Firestore:", err);
       }
@@ -529,12 +503,7 @@ const dbService = {
     // 2. Sync to Firestore if active
     if (this.isUsingFirebase()) {
       try {
-        if (special.id) {
-          await firestoreDb.collection('specials').doc(special.id).set(newSpec);
-        } else {
-          const docRef = await firestoreDb.collection('specials').add(newSpec);
-          newSpec.id = docRef.id;
-        }
+        await firestoreDb.collection('specials').doc(newSpec.id).set(newSpec);
       } catch (err) {
         console.warn("Could not sync special to Firestore:", err);
       }
@@ -556,7 +525,7 @@ const dbService = {
     // 2. Sync to Firestore if active
     if (this.isUsingFirebase()) {
       try {
-        await firestoreDb.collection('specials').doc(id).update(special);
+        await firestoreDb.collection('specials').doc(id).set(special, { merge: true });
       } catch (err) {
         console.warn("Could not update special in Firestore:", err);
       }
@@ -634,12 +603,7 @@ const dbService = {
     // 2. Sync to Firestore if active
     if (this.isUsingFirebase()) {
       try {
-        if (spot.id) {
-          await firestoreDb.collection('spots').doc(spot.id).set(newSpot);
-        } else {
-          const docRef = await firestoreDb.collection('spots').add(newSpot);
-          newSpot.id = docRef.id;
-        }
+        await firestoreDb.collection('spots').doc(newSpot.id).set(newSpot);
       } catch (err) {
         console.warn("Could not sync spot to Firestore:", err);
       }
@@ -661,7 +625,7 @@ const dbService = {
     // 2. Sync to Firestore if active
     if (this.isUsingFirebase()) {
       try {
-        await firestoreDb.collection('spots').doc(id).update(spot);
+        await firestoreDb.collection('spots').doc(id).set(spot, { merge: true });
       } catch (err) {
         console.warn("Could not update spot in Firestore:", err);
       }
@@ -1289,8 +1253,8 @@ const authService = {
             email: user.email,
             isDemo: false,
             role: 'vendor',
-            spotId: meta.spotId || 'bukka-gate',
-            spotName: meta.spotName || "Mama Joy's Food Canteen"
+            spotId: meta.spotId || 'main-caf',
+            spotName: meta.spotName || "Iya Beji"
           };
           notifyVendorAuth(profile);
         } else {

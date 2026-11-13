@@ -13,7 +13,7 @@
   let allSpots = (window.dbService && window.dbService.getSpotsSync) ? window.dbService.getSpotsSync() : (window.DEFAULT_SPOTS || []);
   let allItems = (window.dbService && window.dbService.getItemsSync) ? window.dbService.getItemsSync() : [];
   let allSpecials = (window.dbService && window.dbService.getSpecialsSync) ? window.dbService.getSpecialsSync() : [];
-  let currentSpotId = localStorage.getItem('rukkys_vendor_spot_id') || 'bukka-gate';
+  let currentSpotId = localStorage.getItem('rukkys_vendor_spot_id') || 'main-caf';
   let currentTab = 'offers'; // 'offers' (items) | 'specials'
   let currentCategoryFilter = 'all';
 
@@ -92,7 +92,7 @@
       currentSpotId = spot.id;
       localStorage.setItem('rukkys_vendor_spot_id', currentSpotId);
     }
-    return spot || { id: 'bukka-gate', name: "Mama Joy's Food Canteen", tag: "Near School Gate" };
+    return spot || allSpots[0] || { id: 'main-caf', name: "Iya Beji", tag: "Cafeteria" };
   }
 
   function updateHeader() {
@@ -152,7 +152,7 @@
     if (!offersList) return;
     const spot = getCurrentSpot();
 
-    const spotItems = allItems.filter(it => it.spotId === spot.id);
+    const spotItems = allItems.filter(it => it.spotId === spot.id || (it.spotName && spot.name && it.spotName.toLowerCase() === spot.name.toLowerCase()));
     if (offersCountBadge) offersCountBadge.textContent = spotItems.length;
 
     // Update Rukky's Engine live combo calculation
