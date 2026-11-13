@@ -64,7 +64,9 @@ window.MealCard = (function () {
           <span class="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0"></span>
           <span class="truncate">${it.name}</span>
         </span>
-        <span class="font-extrabold text-stone-600 text-xs shrink-0 ml-2 font-display">${formatNaira(it.price)}</span>
+        <span class="font-extrabold text-stone-600 text-xs shrink-0 ml-2 font-display">
+          ${it.pricingType === 'from_price' ? '<span class="text-[9px] uppercase font-black text-amber-700 bg-amber-100 border border-amber-200 px-1 py-0.2 rounded mr-1">from</span>' : ''}${formatNaira(it.price)}
+        </span>
       </li>
     `).join('') : `
       <li class="flex items-center justify-between text-xs py-1">
@@ -89,8 +91,9 @@ window.MealCard = (function () {
           </h2>
         </div>
         <div class="text-right shrink-0">
+          ${combo.hasFromPrice ? '<span class="text-[9px] text-amber-700 font-extrabold uppercase tracking-wider block leading-tight">starts from</span>' : ''}
           <span class="text-xl sm:text-2xl font-black font-display text-brand-600 tracking-tight block">${formatNaira(combo.price)}</span>
-          <span class="text-[10px] text-stone-400 font-extrabold uppercase tracking-wider block">total</span>
+          <span class="text-[10px] text-stone-400 font-extrabold uppercase tracking-wider block">${combo.hasFromPrice ? 'base meal' : 'total'}</span>
         </div>
       </div>
 
@@ -153,7 +156,8 @@ window.MealCard = (function () {
     if (copyBtn) {
       copyBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const shareText = `🍽️ Rukky's Pick at Wellspring:\n${combo.title}\nTotal: ${formatNaira(combo.price)}\nLocation: ${combo.spotName || 'Campus Spot'}`;
+        const pricePrefix = combo.hasFromPrice ? 'Starts from ' : '';
+        const shareText = `🍽️ Rukky's Pick at Wellspring:\n${combo.title}\nPrice: ${pricePrefix}${formatNaira(combo.price)}\nLocation: ${combo.spotName || 'Campus Spot'}`;
         copyToClipboard(shareText);
         if (typeof onCopySuccess === 'function') {
           onCopySuccess();

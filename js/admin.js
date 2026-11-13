@@ -366,7 +366,9 @@ function renderItemsTable() {
             <span class="truncate">${item.name}</span>
           </td>
           <td class="py-3 px-4 text-stone-600 font-semibold text-xs">${spotName}</td>
-          <td class="py-3 px-4 font-extrabold text-stone-900 font-display text-sm">₦${Number(item.price).toLocaleString()}</td>
+          <td class="py-3 px-4 font-extrabold text-stone-900 font-display text-sm">
+            ${item.pricingType === 'from_price' ? `<span class="text-[9px] uppercase font-black text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.5 rounded mr-1">from</span>` : ''}₦${Number(item.price).toLocaleString()}${item.pricingType !== 'from_price' ? `<span class="text-[10px] text-stone-400 font-semibold ml-1">/ portion</span>` : ''}
+          </td>
           <td class="py-3 px-4">${getItemCategoryBadge(item.type)}</td>
           <td class="py-3 px-4">
             <button onclick="toggleItemAvail('${item.id}')" class="px-2.5 py-1 rounded-full text-[10px] font-bold active:scale-95 transition ${isAvail ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-stone-200 text-stone-600 hover:bg-stone-300'}">
@@ -399,7 +401,9 @@ function renderItemsTable() {
               <h4 class="font-extrabold text-stone-900 text-sm leading-snug truncate ${!isAvail ? 'line-through text-stone-400' : ''}">${item.name}</h4>
             </div>
             <div class="text-right shrink-0">
+              ${item.pricingType === 'from_price' ? `<span class="text-[9px] uppercase font-black text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded block mb-0.5">from</span>` : ''}
               <span class="font-black text-brand-600 font-display text-base">₦${Number(item.price).toLocaleString()}</span>
+              ${item.pricingType !== 'from_price' ? `<span class="text-[9px] text-stone-400 font-semibold block">/ portion</span>` : ''}
             </div>
           </div>
 
@@ -700,6 +704,8 @@ if (openAddItemBtn) {
     document.getElementById('itemForm').reset();
     document.getElementById('itemEditId').value = "";
     document.getElementById('itemAvailable').checked = true;
+    const defaultRadio = document.querySelector('input[name="itemPricingType"][value="per_portion"]');
+    if (defaultRadio) defaultRadio.checked = true;
     itemModal.classList.remove('hidden');
   });
 }
@@ -716,6 +722,10 @@ window.editItem = (id) => {
   document.getElementById('itemSpotSelect').value = it.spotId || (allSpots[0] ? allSpots[0].id : '');
   document.getElementById('itemAvailable').checked = it.available !== false;
 
+  const targetPricing = it.pricingType || 'per_portion';
+  const pricingRadio = document.querySelector(`input[name="itemPricingType"][value="${targetPricing}"]`);
+  if (pricingRadio) pricingRadio.checked = true;
+
   itemModal.classList.remove('hidden');
 };
 
@@ -728,9 +738,13 @@ if (itemForm) {
     const selectedOption = spotSelect.options[spotSelect.selectedIndex];
     const spotName = selectedOption ? selectedOption.textContent : 'Campus Spot';
 
+    const pricingTypeEl = document.querySelector('input[name="itemPricingType"]:checked');
+    const pricingTypeVal = pricingTypeEl ? pricingTypeEl.value : 'per_portion';
+
     const payload = {
       name: document.getElementById('itemName').value.trim(),
       price: parseFloat(document.getElementById('itemPrice').value),
+      pricingType: pricingTypeVal,
       type: document.getElementById('itemCategory').value,
       spotId: spotSelect.value,
       spotName: spotName,

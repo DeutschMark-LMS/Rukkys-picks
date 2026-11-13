@@ -199,8 +199,10 @@
           <h3 class="font-extrabold text-sm text-stone-900 truncate ${!isAvail ? 'line-through text-stone-400' : ''}">
             ${item.name}
           </h3>
-          <div class="flex items-center space-x-2 mt-0.5">
+          <div class="flex items-center space-x-1.5 mt-0.5">
+            ${item.pricingType === 'from_price' ? `<span class="text-[9px] uppercase font-black text-amber-700 bg-amber-100 border border-amber-200 px-1.5 py-0.2 rounded">from</span>` : ''}
             <span class="text-brand-600 font-display font-black text-sm">${formatNaira(item.price)}</span>
+            ${item.pricingType !== 'from_price' ? `<span class="text-[10px] text-stone-400 font-semibold">/ portion</span>` : ''}
           </div>
         </div>
 
@@ -332,6 +334,9 @@
       if (offerPrice) offerPrice.value = item.price;
       if (offerCategory) offerCategory.value = item.type || 'main';
       if (offerAvailable) offerAvailable.checked = item.available !== false;
+      const targetPricing = item.pricingType || 'per_portion';
+      const pricingRadio = document.querySelector(`input[name="offerPricingType"][value="${targetPricing}"]`);
+      if (pricingRadio) pricingRadio.checked = true;
       if (saveOfferBtn) saveOfferBtn.textContent = "Save Changes";
     } else {
       if (offerModalTitle) offerModalTitle.textContent = "Add Food Item & Price";
@@ -340,6 +345,8 @@
       if (offerPrice) offerPrice.value = "";
       if (offerCategory) offerCategory.value = "main";
       if (offerAvailable) offerAvailable.checked = true;
+      const defaultRadio = document.querySelector('input[name="offerPricingType"][value="per_portion"]');
+      if (defaultRadio) defaultRadio.checked = true;
       if (saveOfferBtn) saveOfferBtn.textContent = "Save Food Item";
     }
     offerModal.classList.remove('hidden');
@@ -490,11 +497,15 @@
           return;
         }
 
+        const pricingTypeEl = document.querySelector('input[name="offerPricingType"]:checked');
+        const pricingTypeVal = pricingTypeEl ? pricingTypeEl.value : 'per_portion';
+
         const payload = {
           spotId: spot.id,
           spotName: spot.name,
           name: nameVal,
           price: priceVal,
+          pricingType: pricingTypeVal,
           type: catVal,
           available: availVal
         };

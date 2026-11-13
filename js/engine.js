@@ -156,6 +156,19 @@
         return false;
       }
 
+      function mapComboItems(list) {
+        return (list || []).map(it => ({
+          name: it.name,
+          price: it.price,
+          type: it.type,
+          pricingType: it.pricingType || 'per_portion'
+        }));
+      }
+
+      function hasFromPrice(list) {
+        return (list || []).some(it => it.pricingType === 'from_price');
+      }
+
       const spotsMap = new Map();
       (spots || []).forEach(sp => spotsMap.set(sp.id, sp));
 
@@ -218,7 +231,8 @@
                   spotId: spotId,
                   spotName: spot.name,
                   spotTag: spot.tag || 'Campus Spot',
-                  items: coreItems.map(it => ({ name: it.name, price: it.price, type: it.type })),
+                  items: mapComboItems(coreItems),
+                  hasFromPrice: hasFromPrice(coreItems),
                   rukkysVerdict: rukkysVerdict,
                   rating: rating,
                   vibeBadge: vibeBadge
@@ -243,7 +257,8 @@
                       spotId: spotId,
                       spotName: spot.name,
                       spotTag: spot.tag || 'Campus Spot',
-                      items: comboWithSide.map(it => ({ name: it.name, price: it.price, type: it.type })),
+                      items: mapComboItems(comboWithSide),
+                      hasFromPrice: hasFromPrice(comboWithSide),
                       rukkysVerdict: generateVerdict(main, protein, side, null, spot, sidePrice),
                       rating: generateRating(sidePrice, false, true),
                       vibeBadge: generateVibeBadge(sidePrice, main, protein, side, null, sideCategory, lowBudgetLimit)
@@ -270,7 +285,8 @@
                       spotId: spotId,
                       spotName: spot.name,
                       spotTag: spot.tag || 'Campus Spot',
-                      items: comboWithDrink.map(it => ({ name: it.name, price: it.price, type: it.type })),
+                      items: mapComboItems(comboWithDrink),
+                      hasFromPrice: hasFromPrice(comboWithDrink),
                       rukkysVerdict: generateVerdict(main, protein, null, drink, spot, drinkPrice),
                       rating: generateRating(drinkPrice, true, false),
                       vibeBadge: generateVibeBadge(drinkPrice, main, protein, null, drink, drinkCategory, lowBudgetLimit)
@@ -295,7 +311,8 @@
                         spotId: spotId,
                         spotName: spot.name,
                         spotTag: spot.tag || 'Campus Spot',
-                        items: deluxeItems.map(it => ({ name: it.name, price: it.price, type: it.type })),
+                        items: mapComboItems(deluxeItems),
+                        hasFromPrice: hasFromPrice(deluxeItems),
                         rukkysVerdict: generateVerdict(main, protein, side, drink, spot, deluxePrice),
                         rating: generateRating(deluxePrice, true, true),
                         vibeBadge: 'Deluxe Feast 👑'
@@ -326,7 +343,8 @@
                       spotId: spotId,
                       spotName: spot.name,
                       spotTag: spot.tag || 'Campus Spot',
-                      items: dpItems.map(it => ({ name: it.name, price: it.price, type: it.type })),
+                      items: mapComboItems(dpItems),
+                      hasFromPrice: hasFromPrice(dpItems),
                       rukkysVerdict: `The ultimate protein boost! ${main.name} served hot with both ${p1.name} and ${p2.name} at ${spot.name}. Guaranteed to keep you satisfied through all lectures.`,
                       rating: generateRating(dpPrice, false, false),
                       vibeBadge: 'Double Protein 🥩'
@@ -358,7 +376,8 @@
                     spotId: spotId,
                     spotName: spot.name,
                     spotTag: spot.tag || 'Campus Spot',
-                    items: csItems.map(it => ({ name: it.name, price: it.price, type: it.type })),
+                    items: mapComboItems(csItems),
+                    hasFromPrice: hasFromPrice(csItems),
                     rukkysVerdict: `A legendary campus budget combination! Fresh ${main.name} paired with hot ${side.name} at ${spot.name}. Filling, delicious, and easy on your pocket.`,
                     rating: generateRating(csPrice, false, true),
                     vibeBadge: badge
@@ -384,7 +403,8 @@
                     spotId: spotId,
                     spotName: spot.name,
                     spotTag: spot.tag || 'Campus Spot',
-                    items: snkItems.map(it => ({ name: it.name, price: it.price, type: it.type })),
+                    items: mapComboItems(snkItems),
+                    hasFromPrice: hasFromPrice(snkItems),
                     rukkysVerdict: `The ideal between-lectures quick refuel. Grab a warm ${side.name} and wash it down with a chilled ${drink.name} from ${spot.name}.`,
                     rating: generateRating(snkPrice, true, true),
                     vibeBadge: 'Quick Refuel ⚡'
@@ -410,7 +430,8 @@
                     spotId: spotId,
                     spotName: spot.name,
                     spotTag: spot.tag || 'Campus Spot',
-                    items: snkItems.map(it => ({ name: it.name, price: it.price, type: it.type })),
+                    items: mapComboItems(snkItems),
+                    hasFromPrice: hasFromPrice(snkItems),
                     rukkysVerdict: `A quick campus snack combo of ${side.name} and ${drink.name} from ${spot.name}.`,
                     rating: '9.4/10',
                     vibeBadge: 'Quick Refuel ⚡'
@@ -431,7 +452,8 @@
                 spotId: spotId,
                 spotName: spot.name,
                 spotTag: spot.tag || 'Campus Spot',
-                items: [{ name: item.name, price: item.price, type: item.type }],
+                items: mapComboItems([item]),
+                hasFromPrice: hasFromPrice([item]),
                 rukkysVerdict: `Single serving portion of ${item.name} prepared fresh at ${spot.name}.`,
                 rating: '9.3/10',
                 vibeBadge: item.price <= lowBudgetLimit ? 'Budget Pick 🪙' : 'Fresh Snack 🥪'
