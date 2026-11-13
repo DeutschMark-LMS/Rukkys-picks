@@ -532,6 +532,29 @@ function renderCombosTable() {
   }
 }
 
+const DAY_LABELS = {
+  monday: 'Monday',
+  tuesday: 'Tuesday',
+  wednesday: 'Wednesday',
+  thursday: 'Thursday',
+  friday: 'Friday',
+  saturday: 'Saturday',
+  sunday: 'Sunday',
+  everyday: 'Everyday'
+};
+
+function getTodayDayKey() {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[new Date().getDay()] || 'monday';
+}
+
+function formatDayLabel(dayKey) {
+  if (!dayKey) return "Today's Special";
+  const key = String(dayKey).toLowerCase();
+  if (key === 'everyday') return '🌟 Everyday Special';
+  return `📅 ${DAY_LABELS[key] || dayKey} Special`;
+}
+
 // --- RENDER SPECIALS GRID ---
 function renderSpecialsGrid() {
   const grid = document.getElementById('specialsGrid');
@@ -542,26 +565,42 @@ function renderSpecialsGrid() {
     return;
   }
 
-  grid.innerHTML = allSpecials.map(spec => `
-    <div class="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm flex flex-col justify-between space-y-3">
-      <div>
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">${spec.badge || 'Daily Deal'}</span>
-          <span class="font-extrabold text-stone-900 font-display text-base">₦${spec.price.toLocaleString()}</span>
-        </div>
-        <h4 class="font-bold text-stone-900 text-sm leading-snug">${spec.title}</h4>
-        <p class="text-xs text-stone-500 font-medium mt-1">📍 ${spec.vendor}</p>
-        <p class="text-xs text-stone-600 mt-2 bg-stone-50 p-2.5 rounded-xl border border-stone-100 italic">"${spec.rukkysPitch || ''}"</p>
-      </div>
+  const todayKey = getTodayDayKey();
 
-      <div class="pt-2 border-t border-stone-100 flex items-center justify-end text-xs">
-        <div class="space-x-1 shrink-0">
-          <button onclick="editSpecial('${spec.id}')" class="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 active:scale-95 text-stone-700 rounded-lg font-bold transition text-xs">Edit</button>
-          <button onclick="deleteSpecial('${spec.id}')" class="px-2.5 py-1 bg-red-50 hover:bg-red-100 active:scale-95 text-red-600 rounded-lg font-bold transition text-xs">Delete</button>
+  grid.innerHTML = allSpecials.map(spec => {
+    const isToday = !spec.dayOfWeek || spec.dayOfWeek === 'everyday' || spec.dayOfWeek === todayKey;
+    const isFrom = spec.pricingType === 'from_price';
+
+    return `
+      <div class="bg-white rounded-2xl p-4 border border-stone-200 shadow-sm flex flex-col justify-between space-y-3">
+        <div>
+          <div class="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+            <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+              <span class="text-[10px] font-extrabold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200">
+                ${formatDayLabel(spec.dayOfWeek)}
+              </span>
+              ${isToday ? '<span class="text-[9px] bg-red-100 text-red-700 font-bold px-1.5 py-0.5 rounded">Today</span>' : ''}
+            </div>
+            <div class="text-right">
+              ${isFrom ? '<span class="text-[9px] text-amber-700 font-extrabold uppercase mr-1">from</span>' : ''}
+              <span class="font-extrabold text-stone-900 font-display text-base">₦${spec.price.toLocaleString()}</span>
+              ${!isFrom ? '<span class="text-[9px] text-stone-400 font-semibold ml-0.5">/ plate</span>' : ''}
+            </div>
+          </div>
+          <h4 class="font-bold text-stone-900 text-sm leading-snug">${spec.title}</h4>
+          <p class="text-xs text-stone-500 font-medium mt-1">📍 ${spec.vendor}</p>
+          <p class="text-xs text-stone-600 mt-2 bg-stone-50 p-2.5 rounded-xl border border-stone-100 italic">"${spec.rukkysPitch || ''}"</p>
+        </div>
+
+        <div class="pt-2 border-t border-stone-100 flex items-center justify-end text-xs">
+          <div class="space-x-1 shrink-0">
+            <button onclick="editSpecial('${spec.id}')" class="px-2.5 py-1 bg-stone-100 hover:bg-stone-200 active:scale-95 text-stone-700 rounded-lg font-bold transition text-xs">Edit</button>
+            <button onclick="deleteSpecial('${spec.id}')" class="px-2.5 py-1 bg-red-50 hover:bg-red-100 active:scale-95 text-red-600 rounded-lg font-bold transition text-xs">Delete</button>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // --- RENDER SPOTS GRID ---
@@ -789,6 +828,10 @@ if (openAddSpecialBtn) {
     document.getElementById('specialModalTitle').textContent = "Add Daily Deal";
     document.getElementById('specialForm').reset();
     document.getElementById('specialEditId').value = "";
+    const specialDaySelect = document.getElementById('specialDay');
+    if (specialDaySelect) specialDaySelect.value = getTodayDayKey();
+    const pricingSelect = document.getElementById('specialPricingType');
+    if (pricingSelect) pricingSelect.value = 'per_portion';
     specialModal.classList.remove('hidden');
   });
 }
@@ -799,10 +842,14 @@ window.editSpecial = (id) => {
   document.getElementById('specialModalTitle').textContent = "Edit Daily Deal";
   document.getElementById('specialEditId').value = s.id;
   document.getElementById('specialVendor').value = s.vendor;
-  document.getElementById('specialBadge').value = s.badge;
+  document.getElementById('specialBadge').value = s.badge || '';
   document.getElementById('specialTitle').value = s.title;
   document.getElementById('specialPrice').value = s.price;
   document.getElementById('specialPitch').value = s.rukkysPitch || '';
+  const specialDaySelect = document.getElementById('specialDay');
+  if (specialDaySelect) specialDaySelect.value = s.dayOfWeek || getTodayDayKey();
+  const pricingSelect = document.getElementById('specialPricingType');
+  if (pricingSelect) pricingSelect.value = s.pricingType || 'per_portion';
   specialModal.classList.remove('hidden');
 };
 
@@ -811,12 +858,23 @@ if (specialForm) {
   specialForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('specialEditId').value;
+    const vendorVal = document.getElementById('specialVendor').value.trim();
+    const titleVal = document.getElementById('specialTitle').value.trim();
+    const priceVal = parseFloat(document.getElementById('specialPrice').value);
+    const dayVal = document.getElementById('specialDay') ? document.getElementById('specialDay').value : getTodayDayKey();
+    const pricingTypeVal = document.getElementById('specialPricingType') ? document.getElementById('specialPricingType').value : 'per_portion';
+    const dayLabel = DAY_LABELS[dayVal] || 'Daily';
+    const badgeInput = document.getElementById('specialBadge').value.trim();
+    const badgeVal = badgeInput || `${dayLabel} Special 🔥`;
+
     const payload = {
-      vendor: document.getElementById('specialVendor').value.trim(),
-      badge: document.getElementById('specialBadge').value.trim(),
-      title: document.getElementById('specialTitle').value.trim(),
-      price: parseFloat(document.getElementById('specialPrice').value),
-      rukkysPitch: document.getElementById('specialPitch').value.trim(),
+      vendor: vendorVal,
+      badge: badgeVal,
+      title: titleVal,
+      price: priceVal,
+      dayOfWeek: dayVal,
+      pricingType: pricingTypeVal,
+      rukkysPitch: document.getElementById('specialPitch').value.trim() || `${vendorVal} cooked this special meal for ${dayLabel}. Available fresh!`,
       active: true
     };
 

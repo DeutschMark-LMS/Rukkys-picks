@@ -85,6 +85,29 @@
     return '₦' + Number(amount || 0).toLocaleString('en-NG');
   }
 
+  const DAY_LABELS = {
+    monday: 'Monday',
+    tuesday: 'Tuesday',
+    wednesday: 'Wednesday',
+    thursday: 'Thursday',
+    friday: 'Friday',
+    saturday: 'Saturday',
+    sunday: 'Sunday',
+    everyday: 'Everyday'
+  };
+
+  function getTodayDayKey() {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[new Date().getDay()] || 'monday';
+  }
+
+  function formatDayLabel(dayKey) {
+    if (!dayKey) return "Today's Special";
+    const key = String(dayKey).toLowerCase();
+    if (key === 'everyday') return '🌟 Everyday Special';
+    return `📅 ${DAY_LABELS[key] || dayKey} Special`;
+  }
+
   function getCurrentSpot() {
     let spot = allSpots.find(s => s.id === currentSpotId);
     if (!spot && allSpots.length > 0) {
@@ -280,23 +303,31 @@
     if (specialsEmptyState) specialsEmptyState.classList.add('hidden');
     specialsList.innerHTML = '';
 
+    const todayKey = getTodayDayKey();
     mySpecials.forEach(spec => {
       const card = document.createElement('div');
       card.className = "bg-white rounded-2xl p-4 border border-amber-200/90 shadow-sm space-y-2 relative overflow-hidden";
 
+      const isToday = !spec.dayOfWeek || spec.dayOfWeek === 'everyday' || spec.dayOfWeek === todayKey;
+      const isFrom = spec.pricingType === 'from_price';
+
       card.innerHTML = `
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0 flex-1">
-            <span class="inline-block text-[10px] font-black uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded mb-1">
-              ${spec.badge || "Today's Special 🔥"}
-            </span>
+            <div class="flex items-center space-x-1.5 mb-1 flex-wrap gap-y-1">
+              <span class="inline-block text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded">
+                ${formatDayLabel(spec.dayOfWeek)}
+              </span>
+              ${isToday ? '<span class="text-[9px] bg-red-100 text-red-700 font-extrabold px-1.5 py-0.5 rounded">TODAY 🔥</span>' : ''}
+            </div>
             <h3 class="font-bold text-sm text-stone-900 leading-snug">
               ${spec.title}
             </h3>
           </div>
           <div class="text-right shrink-0">
+            ${isFrom ? '<span class="text-[9px] text-amber-700 font-extrabold uppercase block leading-tight">starts from</span>' : ''}
             <span class="text-base font-extrabold font-display text-amber-600 block">${formatNaira(spec.price)}</span>
-            <span class="text-[10px] text-stone-400 font-bold uppercase">deal</span>
+            <span class="text-[10px] text-stone-400 font-bold uppercase">${isFrom ? 'base' : 'deal'}</span>
           </div>
         </div>
 
@@ -371,17 +402,26 @@
 
   function openSpecialModal(spec = null) {
     if (!specialModal) return;
+    const specialDaySelect = document.getElementById('specialDay');
+
     if (spec) {
       if (specialModalTitle) specialModalTitle.textContent = "Edit Special Menu";
       if (specialEditId) specialEditId.value = spec.id;
       if (specialTitle) specialTitle.value = spec.title;
       if (specialPrice) specialPrice.value = spec.price;
+      if (specialDaySelect) specialDaySelect.value = spec.dayOfWeek || getTodayDayKey();
+      const targetPricing = spec.pricingType || 'per_portion';
+      const pricingRadio = document.querySelector(`input[name="specialPricingType"][value="${targetPricing}"]`);
+      if (pricingRadio) pricingRadio.checked = true;
       if (saveSpecialBtn) saveSpecialBtn.textContent = "Update Special Deal";
     } else {
       if (specialModalTitle) specialModalTitle.textContent = "Post Special Menu";
       if (specialEditId) specialEditId.value = "";
       if (specialTitle) specialTitle.value = "";
       if (specialPrice) specialPrice.value = "";
+      if (specialDaySelect) specialDaySelect.value = getTodayDayKey();
+      const defaultRadio = document.querySelector('input[name="specialPricingType"][value="per_portion"]');
+      if (defaultRadio) defaultRadio.checked = true;
       if (saveSpecialBtn) saveSpecialBtn.textContent = "Publish Special Menu";
     }
     specialModal.classList.remove('hidden');
@@ -548,13 +588,20 @@
           return;
         }
 
+        const dayVal = document.getElementById('specialDay') ? document.getElementById('specialDay').value : getTodayDayKey();
+        const pricingTypeEl = document.querySelector('input[name="specialPricingType"]:checked');
+        const pricingTypeVal = pricingTypeEl ? pricingTypeEl.value : 'per_portion';
+        const dayLabel = DAY_LABELS[dayVal] || 'Daily';
+
         const payload = {
           spotId: spot.id,
           vendor: spot.name,
           title: titleVal,
           price: priceVal,
-          badge: "Today's Special 🔥",
-          rukkysPitch: `${spot.name} cooked this special combo today. Available fresh!`,
+          dayOfWeek: dayVal,
+          pricingType: pricingTypeVal,
+          badge: `${dayLabel} Special 🔥`,
+          rukkysPitch: `${spot.name} cooked this special combo for ${dayLabel}. Available fresh!`,
           active: true
         };
 

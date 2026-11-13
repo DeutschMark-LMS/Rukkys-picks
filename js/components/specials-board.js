@@ -7,6 +7,29 @@ window.SpecialsBoard = (function () {
   let currentIndex = 0;
   let onLockBudgetCallback = null;
 
+  const DAY_LABELS = {
+    monday: 'Monday',
+    tuesday: 'Tuesday',
+    wednesday: 'Wednesday',
+    thursday: 'Thursday',
+    friday: 'Friday',
+    saturday: 'Saturday',
+    sunday: 'Sunday',
+    everyday: 'Everyday'
+  };
+
+  function getTodayDayKey() {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    return days[new Date().getDay()] || 'monday';
+  }
+
+  function formatDayLabel(dayKey) {
+    if (!dayKey) return "Today's Special";
+    const key = String(dayKey).toLowerCase();
+    if (key === 'everyday') return '🌟 Everyday Special';
+    return `📅 ${DAY_LABELS[key] || dayKey} Special`;
+  }
+
   function formatNaira(amount) {
     return '₦' + Number(amount).toLocaleString('en-NG');
   }
@@ -29,9 +52,14 @@ window.SpecialsBoard = (function () {
     if (currentIndex >= specials.length) currentIndex = 0;
     const item = specials[currentIndex];
 
+    const todayKey = getTodayDayKey();
+    const isForToday = !item.dayOfWeek || item.dayOfWeek === 'everyday' || item.dayOfWeek === todayKey;
+    const isFrom = item.pricingType === 'from_price';
+
     const dateBadge = document.getElementById('specialsDateBadge');
     if (dateBadge && specials.length > 0) {
-      dateBadge.textContent = `Deal ${currentIndex + 1} of ${specials.length}`;
+      const dayText = item.dayOfWeek ? (DAY_LABELS[item.dayOfWeek] || item.dayOfWeek) : 'Today';
+      dateBadge.textContent = `${dayText} • Deal ${currentIndex + 1} of ${specials.length}`;
     }
 
     container.innerHTML = `
@@ -41,9 +69,12 @@ window.SpecialsBoard = (function () {
           <span>🏪</span>
           <span>${item.vendor || 'Campus Canteen'}</span>
         </span>
-        <span class="text-[11px] font-extrabold text-orange-200 bg-white/10 px-2.5 py-1 rounded-xl border border-white/10">
-          ${item.badge || "Today's Special 🔥"}
-        </span>
+        <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+          <span class="text-[11px] font-extrabold text-orange-200 bg-white/10 px-2.5 py-1 rounded-xl border border-white/10">
+            ${formatDayLabel(item.dayOfWeek)}
+          </span>
+          ${isForToday ? '<span class="text-[10px] font-black uppercase text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/30">TODAY 🔥</span>' : ''}
+        </div>
       </div>
 
       <!-- Main Meal Title & Big Price -->
@@ -52,10 +83,11 @@ window.SpecialsBoard = (function () {
           ${item.title}
         </h4>
         <div class="flex items-baseline gap-2 pt-1.5">
+          ${isFrom ? '<span class="text-xs font-black uppercase tracking-wider text-amber-300">starts from</span>' : ''}
           <span class="text-2xl sm:text-3xl font-black font-display text-amber-400 tracking-tight">
             ${formatNaira(item.price)}
           </span>
-          <span class="text-[11px] text-stone-400 font-medium">special deal rate</span>
+          <span class="text-[11px] text-stone-400 font-medium">${isFrom ? 'base deal rate' : 'special deal rate'}</span>
         </div>
       </div>
 
@@ -72,7 +104,7 @@ window.SpecialsBoard = (function () {
         id="lockSpecialBudgetBtn" 
         class="w-full mt-4 py-3.5 px-4 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 active:scale-98 text-stone-950 font-black rounded-2xl text-xs sm:text-sm shadow-lg shadow-amber-500/20 transition flex items-center justify-center space-x-2 tap-highlight-transparent"
       >
-        <span>Set budget to this deal (${formatNaira(item.price)})</span>
+        <span>Set budget to this deal (${isFrom ? 'from ' : ''}${formatNaira(item.price)})</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
       </button>
     `;
@@ -110,8 +142,17 @@ window.SpecialsBoard = (function () {
     }
   }
 
+  function sortSpecials(list) {
+    const todayKey = getTodayDayKey();
+    return [...list].sort((a, b) => {
+      const aIsToday = (!a.dayOfWeek || a.dayOfWeek === 'everyday' || a.dayOfWeek === todayKey) ? 1 : 0;
+      const bIsToday = (!b.dayOfWeek || b.dayOfWeek === 'everyday' || b.dayOfWeek === todayKey) ? 1 : 0;
+      return bIsToday - aIsToday;
+    });
+  }
+
   function init(initialSpecials, onLockBudget) {
-    specials = initialSpecials || [];
+    specials = sortSpecials(initialSpecials || []);
     onLockBudgetCallback = onLockBudget;
     currentIndex = 0;
 
@@ -125,7 +166,7 @@ window.SpecialsBoard = (function () {
   }
 
   function updateSpecials(newSpecials) {
-    specials = (newSpecials || []).filter(s => s.active !== false);
+    specials = sortSpecials((newSpecials || []).filter(s => s.active !== false));
     if (currentIndex >= specials.length) currentIndex = 0;
     render();
   }
