@@ -99,6 +99,18 @@
     const spot = getCurrentSpot();
     if (headerSpotName) headerSpotName.textContent = spot.name;
     if (headerSpotTag) headerSpotTag.textContent = spot.tag || 'Campus Food Spot';
+
+    const cloudBadge = document.getElementById('vendorCloudBadge');
+    if (cloudBadge && window.dbService) {
+      const isCloud = window.dbService.isUsingFirebase();
+      if (isCloud) {
+        cloudBadge.className = "inline-flex items-center space-x-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0";
+        cloudBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span><span>Live ☁️</span>`;
+      } else {
+        cloudBadge.className = "inline-flex items-center space-x-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-600 shrink-0";
+        cloudBadge.innerHTML = `<span>Local Mode</span>`;
+      }
+    }
   }
 
   // --- TAB SWITCHING ---
@@ -224,7 +236,7 @@
       toggleBtn.addEventListener('click', async () => {
         const nextState = !isAvail;
         await window.dbService.updateItem(item.id, { available: nextState });
-        showToast(nextState ? `"${item.name}" is now In Stock!` : `"${item.name}" marked Sold Out`, nextState ? '✅' : '⏸️');
+        showToast(nextState ? `"${item.name}" is now In Stock (Live ☁️)` : `"${item.name}" marked Sold Out (Live ☁️)`, nextState ? '✅' : '⏸️');
       });
 
       // Edit item
@@ -238,7 +250,7 @@
       deleteBtn.addEventListener('click', async () => {
         if (confirm(`Remove "${item.name}" from your canteen menu?`)) {
           await window.dbService.deleteItem(item.id);
-          showToast(`Removed "${item.name}"`, '🗑️');
+          showToast(`Removed "${item.name}" (Live ☁️)`, '🗑️');
         }
       });
 
@@ -512,10 +524,10 @@
 
         if (editId) {
           await window.dbService.updateItem(editId, payload);
-          showToast(`Updated "${nameVal}" (₦${priceVal})!`, '✅');
+          showToast(`Updated "${nameVal}" (₦${priceVal})! Synced to Cloud ☁️`, '✅');
         } else {
           await window.dbService.addItem(payload);
-          showToast(`Added "${nameVal}" (₦${priceVal})! Rukky's Engine mixed new combos.`, '🍲');
+          showToast(`Added "${nameVal}"! Live on Student App ☁️`, '🍲');
         }
 
         closeOfferModal();
@@ -548,10 +560,10 @@
 
         if (editId) {
           await window.dbService.updateSpecial(editId, payload);
-          showToast(`Updated "${titleVal}"!`, '✅');
+          showToast(`Updated "${titleVal}"! Synced to Cloud ☁️`, '✅');
         } else {
           await window.dbService.addSpecial(payload);
-          showToast(`Published Today's Special!`, '⭐');
+          showToast(`Published Today's Special to Cloud! ☁️`, '⭐');
         }
 
         closeSpecialModal();
